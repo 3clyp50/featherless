@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "featherless",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "vars": {
+    "SHARP_STRICT_CONTEXT": "0",
+    "FEATHERLESS_DEV_MODE": "0",
+    "MEM0_DISABLED": "0"
+  },
+  "ai": { "binding": "AI" },
+  "vectorize": [
+    {
+      "binding": "MEMORY_INDEX",
+      "index_name": "featherless-memory"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "MEMORY_META",
+      "database_name": "featherless-memory-meta",
+      "database_id": "REPLACE_WITH_D1_ID"
+    }
+  ]
+}

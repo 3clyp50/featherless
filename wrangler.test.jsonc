@@ -1,0 +1,16 @@
+// Test-only wrangler config — drops bindings miniflare can't simulate
+// (AI / Vectorize). MemoryClient.fromEnv() returns null without them, so
+// memory tools simply don't register. FHIR / clinical / viz tools all run
+// against live HAPI; that's the integration surface tests cover.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "featherless-test",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-12-30",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "SHARP_STRICT_CONTEXT": "0",
+    "FEATHERLESS_DEV_MODE": "0",
+    "MEM0_DISABLED": "1"
+  }
+}
