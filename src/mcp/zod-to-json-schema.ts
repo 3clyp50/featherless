@@ -5,7 +5,7 @@
  *
  * Outputs draft-07-ish schemas — what MCP clients expect.
  */
-import { z, type ZodTypeAny } from "zod";
+import { type ZodTypeAny, z } from "zod";
 
 type Schema = Record<string, unknown>;
 
@@ -19,7 +19,8 @@ function convert(schema: ZodTypeAny): Schema {
   switch (def.typeName) {
     case "ZodString": {
       const s: Schema = { type: "string" };
-      const checks = (def as unknown as { checks?: { kind: string; value?: unknown }[] }).checks ?? [];
+      const checks =
+        (def as unknown as { checks?: { kind: string; value?: unknown }[] }).checks ?? [];
       for (const c of checks) {
         if (c.kind === "min" && typeof c.value === "number") s.minLength = c.value;
         if (c.kind === "max" && typeof c.value === "number") s.maxLength = c.value;
@@ -28,7 +29,9 @@ function convert(schema: ZodTypeAny): Schema {
     }
     case "ZodNumber": {
       const s: Schema = { type: "number" };
-      const checks = (def as unknown as { checks?: { kind: string; value?: unknown; inclusive?: boolean }[] }).checks ?? [];
+      const checks =
+        (def as unknown as { checks?: { kind: string; value?: unknown; inclusive?: boolean }[] })
+          .checks ?? [];
       let isInt = false;
       for (const c of checks) {
         if (c.kind === "int") isInt = true;
@@ -102,7 +105,8 @@ function unwrap(schema: ZodTypeAny): {
       optional = true;
       s = (s as unknown as { _def: { innerType: ZodTypeAny } })._def.innerType;
     } else if (tn === "ZodDefault") {
-      const d = (s as unknown as { _def: { defaultValue: () => unknown; innerType: ZodTypeAny } })._def;
+      const d = (s as unknown as { _def: { defaultValue: () => unknown; innerType: ZodTypeAny } })
+        ._def;
       defaultValue = d.defaultValue();
       optional = true;
       s = d.innerType;

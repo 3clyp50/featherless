@@ -1,3 +1,4 @@
+import { createUIResource } from "@mcp-ui/server";
 /**
  * MCP-UI visualisation tools — Chart.js dashboards rendered as ui:// resources.
  *
@@ -5,8 +6,6 @@
  * so the MCP-UI host can render the HTML inside its sidebar / inspector.
  */
 import { z } from "zod";
-import { createUIResource } from "@mcp-ui/server";
-import type { McpServer } from "../mcp/server.ts";
 import { FHIRError } from "../clients/fhir-client.ts";
 import {
   allergySummary,
@@ -18,6 +17,7 @@ import {
   observationSummary,
   patientSummary,
 } from "../fhir-utils.ts";
+import type { McpServer } from "../mcp/server.ts";
 import {
   buildLabTrendChart,
   buildMedicationTimeline,
@@ -26,11 +26,7 @@ import {
   buildVitalsDashboard,
 } from "../ui/clinical-charts.ts";
 import { buildClinicalContextDisplay } from "../ui/clinical-display.ts";
-import {
-  checkFhirContext,
-  fhirClientForCurrentContext,
-  resolvePatientId,
-} from "./_helpers.ts";
+import { checkFhirContext, fhirClientForCurrentContext, resolvePatientId } from "./_helpers.ts";
 
 type Dict = Record<string, unknown>;
 
@@ -91,8 +87,7 @@ export function registerVisualizationTools(server: McpServer): void {
 
         let html: string;
         if (!series.length) {
-          html =
-            `<div style="padding:1rem;color:#64748b;font-family:sans-serif;">No numeric observations found for <code>${loinc_or_test}</code>.</div>`;
+          html = `<div style="padding:1rem;color:#64748b;font-family:sans-serif;">No numeric observations found for <code>${loinc_or_test}</code>.</div>`;
         } else {
           const testLabel = (observations[0]?.test as string) || loinc_or_test;
           html = buildLabTrendChart(testLabel, series, normalRange);
@@ -169,7 +164,9 @@ export function registerVisualizationTools(server: McpServer): void {
       const pid = resolvePatientId(patient_id) ?? "";
 
       const now = new Date();
-      const labSince = new Date(now.getTime() - lab_lookback_days * 86_400_000).toISOString().slice(0, 10);
+      const labSince = new Date(now.getTime() - lab_lookback_days * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
 
       let fhir: ReturnType<typeof fhirClientForCurrentContext>;
       try {
@@ -278,7 +275,9 @@ export function registerVisualizationTools(server: McpServer): void {
 
         const filtered = chartBlocks.filter(Boolean);
         if (filtered.length) {
-          const chartsHtml = filtered.map((c) => `<div style="margin-bottom: 1rem;">${c}</div>`).join("");
+          const chartsHtml = filtered
+            .map((c) => `<div style="margin-bottom: 1rem;">${c}</div>`)
+            .join("");
           body += `
           <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1rem;margin-bottom:1rem;">
             <h3 style="margin:0 0 1rem 0;color:#1e293b;">📈 Clinical Trends</h3>

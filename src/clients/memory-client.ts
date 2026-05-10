@@ -109,7 +109,11 @@ export class MemoryClient {
   async addFact(
     patientId: string,
     text: string,
-    metadata: { factType: string; sourceEncounter?: string | null; extra?: Record<string, unknown> } = {
+    metadata: {
+      factType: string;
+      sourceEncounter?: string | null;
+      extra?: Record<string, unknown>;
+    } = {
       factType: "note",
     },
   ): Promise<{ ids: string[]; facts: string[] }> {
@@ -236,11 +240,15 @@ export class MemoryClient {
 function parseFactList(raw: string): string[] {
   if (!raw) return [];
   // Strip code fences if the model added them.
-  const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const stripped = raw
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
   // First, try a strict JSON parse.
   try {
     const parsed = JSON.parse(stripped);
-    if (Array.isArray(parsed) && parsed.every((p) => typeof p === "string")) return parsed.filter(Boolean);
+    if (Array.isArray(parsed) && parsed.every((p) => typeof p === "string"))
+      return parsed.filter(Boolean);
   } catch {
     // fall through
   }
@@ -249,7 +257,8 @@ function parseFactList(raw: string): string[] {
   if (match) {
     try {
       const parsed = JSON.parse(match[0]);
-      if (Array.isArray(parsed) && parsed.every((p) => typeof p === "string")) return parsed.filter(Boolean);
+      if (Array.isArray(parsed) && parsed.every((p) => typeof p === "string"))
+        return parsed.filter(Boolean);
     } catch {
       // give up
     }

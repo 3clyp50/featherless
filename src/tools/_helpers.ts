@@ -1,3 +1,4 @@
+import type { FHIRClient } from "../clients/fhir-client.ts";
 /**
  * Internal helpers shared by tool modules.
  *
@@ -5,7 +6,6 @@
  * argument shapes visible to McpAgent's introspection.
  */
 import { fhirClientForCurrentContext, getCurrentContext, hasFhir } from "../context.ts";
-import type { FHIRClient } from "../clients/fhir-client.ts";
 
 export interface ContextErrorEnvelope {
   error: "fhir_context_required";
@@ -27,10 +27,12 @@ export function fhirContextError(message: string, missing?: string[]): ContextEr
   };
 }
 
-export function checkFhirContext(opts: {
-  requirePatient?: boolean;
-  patientId?: string | null;
-} = {}): ContextErrorEnvelope | null {
+export function checkFhirContext(
+  opts: {
+    requirePatient?: boolean;
+    patientId?: string | null;
+  } = {},
+): ContextErrorEnvelope | null {
   const ctx = getCurrentContext();
   if (!hasFhir(ctx)) {
     const missing: string[] = [];

@@ -100,7 +100,10 @@ function buildAlertsSection(alerts: Dict[]): string {
     const details = (a.details as unknown[] | undefined) ?? [];
     let detailsHtml = "";
     if (details.length) {
-      const items = details.slice(0, 5).map((d) => esc(String(d))).join("<br>• ");
+      const items = details
+        .slice(0, 5)
+        .map((d) => esc(String(d)))
+        .join("<br>• ");
       detailsHtml = `<p class="alert-details">• ${items}</p>`;
     }
     return `
@@ -152,12 +155,14 @@ function buildMedicationsSection(meds: Dict[]): string {
   if (!meds.length) {
     content = '<p class="empty-state">No active medications</p>';
   } else {
-    const rows = meds.map((m) => `
+    const rows = meds.map(
+      (m) => `
       <tr>
         <td><strong>${esc(m.name)}</strong></td>
         <td>${esc(m.dose ?? "")}</td>
         <td>${esc(m.frequency ?? "")}</td>
-      </tr>`);
+      </tr>`,
+    );
     content = `<table>
       <thead><tr><th>Medication</th><th>Dose</th><th>Frequency</th></tr></thead>
       <tbody>${rows.join("")}</tbody>
@@ -179,12 +184,14 @@ function buildProblemsSection(problems: Dict[]): string {
   if (!problems.length) {
     content = '<p class="empty-state">No active problems documented</p>';
   } else {
-    const rows = problems.map((p) => `
+    const rows = problems.map(
+      (p) => `
       <tr>
         <td>${esc(p.name)}</td>
         <td><code>${esc(p.icd_code ?? "N/A")}</code></td>
         <td>${esc(p.onset_date ?? "Unknown")}</td>
-      </tr>`);
+      </tr>`,
+    );
     content = `<table>
       <thead><tr><th>Condition</th><th>ICD Code</th><th>Onset</th></tr></thead>
       <tbody>${rows.join("")}</tbody>
@@ -262,12 +269,14 @@ function buildVisitsSection(visits: Dict[]): string {
 
 function buildImmunizationsSection(imms: Dict[]): string {
   if (!imms.length) return "";
-  const rows = imms.map((v) => `
+  const rows = imms.map(
+    (v) => `
     <tr>
       <td>${esc(v.vaccine)}</td>
       <td>${esc(v.date_administered ?? "Unknown")}</td>
       <td><code>${esc(v.cvx_code ?? "N/A")}</code></td>
-    </tr>`);
+    </tr>`,
+  );
   return `
   <div class="card">
     <div class="card-header">

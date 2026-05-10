@@ -82,7 +82,9 @@ export function categoryCodes(resource: Dict): string[] {
 export function humanizeName(name: Dict | null | undefined): string {
   if (!name) return "";
   if (typeof name.text === "string" && name.text) return name.text;
-  const given = asArr(name.given).filter((g) => typeof g === "string").join(" ");
+  const given = asArr(name.given)
+    .filter((g) => typeof g === "string")
+    .join(" ");
   const family = typeof name.family === "string" ? name.family : "";
   return [given, family].filter(Boolean).join(" ");
 }
@@ -207,8 +209,7 @@ function firstSystemCode(concept: Dict, predicate: (system: string) => boolean):
   return null;
 }
 
-const firstLoinc = (c: Dict): string | null =>
-  firstSystemCode(c, (s) => s === "http://loinc.org");
+const firstLoinc = (c: Dict): string | null => firstSystemCode(c, (s) => s === "http://loinc.org");
 const firstIcd = (c: Dict): string | null =>
   firstSystemCode(c, (s) => s.includes("icd-10") || s.includes("icd-9"));
 const firstSnomed = (c: Dict): string | null =>
@@ -229,11 +230,7 @@ export function observationSummary(obs: Dict): Dict {
     normal_range: observationReferenceRange(obs),
     abnormal: observationIsAbnormal(obs),
     categories: categoryCodes(obs),
-    date:
-      obs.effectiveDateTime ??
-      asObj(obs.effectivePeriod).start ??
-      obs.issued ??
-      null,
+    date: obs.effectiveDateTime ?? asObj(obs.effectivePeriod).start ?? obs.issued ?? null,
     status: obs.status ?? null,
   };
 }
@@ -353,9 +350,7 @@ export function appointmentSummary(a: Dict): Dict {
   return {
     id: a.id ?? null,
     status: a.status ?? null,
-    service_type: asArr(a.serviceType).length
-      ? codingText(asArr(a.serviceType)[0] as Dict)
-      : null,
+    service_type: asArr(a.serviceType).length ? codingText(asArr(a.serviceType)[0] as Dict) : null,
     appointment_type: codingText(asObj(a.appointmentType)),
     reason: asArr(a.reasonCode).length ? codingText(asArr(a.reasonCode)[0] as Dict) : null,
     description: a.description ?? null,
@@ -397,7 +392,7 @@ export function coverageSummary(c: Dict): Dict {
     status: c.status ?? null,
     type: codingText(asObj(c.type)),
     subscriber_id: c.subscriberId ?? null,
-    payor: asArr(c.payor).length ? asObj(asArr(c.payor)[0] as Dict).display ?? null : null,
+    payor: asArr(c.payor).length ? (asObj(asArr(c.payor)[0] as Dict).display ?? null) : null,
     period_start: asObj(c.period).start ?? null,
     period_end: asObj(c.period).end ?? null,
   };

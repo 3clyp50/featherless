@@ -1,0 +1,970 @@
+{
+  "resourceType": "Bundle",
+  "id": "hero-bundle-garcia-maria",
+  "type": "transaction",
+  "meta": {
+    "tag": [
+      {
+        "system": "https://featherless.dev/tags",
+        "code": "synthetic-hero",
+        "display": "Featherless hero patient (synthetic, demo-only)"
+      }
+    ]
+  },
+  "entry": [
+    {
+      "fullUrl": "Patient/hapi-garcia-maria",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "hapi-garcia-maria",
+        "active": true,
+        "name": [
+          { "use": "official", "family": "Garcia", "given": ["María"] }
+        ],
+        "gender": "female",
+        "birthDate": "1958-09-14",
+        "address": [
+          {
+            "use": "home",
+            "line": ["100 Cherry Lane"],
+            "city": "San Diego",
+            "state": "CA",
+            "postalCode": "92101",
+            "country": "US"
+          }
+        ],
+        "telecom": [
+          { "system": "phone", "value": "555-0100", "use": "home" }
+        ],
+        "communication": [
+          {
+            "language": {
+              "coding": [
+                {
+                  "system": "urn:ietf:bcp:47",
+                  "code": "es-US",
+                  "display": "Spanish (United States)"
+                }
+              ],
+              "text": "Spanish (United States)"
+            },
+            "preferred": true
+          }
+        ],
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity",
+            "extension": [
+              {
+                "url": "ombCategory",
+                "valueCoding": {
+                  "system": "urn:oid:2.16.840.1.113883.6.238",
+                  "code": "2135-2",
+                  "display": "Hispanic or Latino"
+                }
+              },
+              { "url": "text", "valueString": "Hispanic or Latino" }
+            ]
+          }
+        ],
+        "contact": [
+          {
+            "relationship": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0131",
+                    "code": "C",
+                    "display": "Emergency Contact"
+                  }
+                ]
+              }
+            ],
+            "name": { "family": "Garcia", "given": ["Ana"] },
+            "telecom": [{ "system": "phone", "value": "555-0101" }]
+          }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Patient/hapi-garcia-maria" }
+    },
+
+    {
+      "fullUrl": "Condition/cond-hfref",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-hfref",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "I50.22", "display": "Chronic systolic (congestive) heart failure" },
+            { "system": "http://snomed.info/sct", "code": "703272007", "display": "Heart failure with reduced ejection fraction" }
+          ],
+          "text": "Heart failure with reduced ejection fraction (HFrEF, EF 38%, NYHA II)"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "onsetDateTime": "2024-11-12",
+        "recordedDate": "2024-11-12"
+      },
+      "request": { "method": "PUT", "url": "Condition/cond-hfref" }
+    },
+
+    {
+      "fullUrl": "Condition/cond-t2dm",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-t2dm",
+        "clinicalStatus": {
+          "coding": [
+            { "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            { "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status", "code": "confirmed" }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/condition-category", "code": "problem-list-item" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "E11.9", "display": "Type 2 diabetes mellitus without complications" },
+            { "system": "http://snomed.info/sct", "code": "44054006", "display": "Diabetes mellitus type 2" }
+          ],
+          "text": "Type 2 diabetes mellitus"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "onsetDateTime": "2018-03-04",
+        "recordedDate": "2018-03-04"
+      },
+      "request": { "method": "PUT", "url": "Condition/cond-t2dm" }
+    },
+
+    {
+      "fullUrl": "Condition/cond-htn",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-htn",
+        "clinicalStatus": {
+          "coding": [
+            { "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            { "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status", "code": "confirmed" }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/condition-category", "code": "problem-list-item" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "I10", "display": "Essential (primary) hypertension" },
+            { "system": "http://snomed.info/sct", "code": "59621000", "display": "Essential hypertension" }
+          ],
+          "text": "Essential hypertension"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "onsetDateTime": "2015-06-15",
+        "recordedDate": "2015-06-15"
+      },
+      "request": { "method": "PUT", "url": "Condition/cond-htn" }
+    },
+
+    {
+      "fullUrl": "Condition/cond-ckd3a",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-ckd3a",
+        "clinicalStatus": {
+          "coding": [
+            { "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            { "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status", "code": "confirmed" }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/condition-category", "code": "problem-list-item" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "N18.31", "display": "Chronic kidney disease, stage 3a" },
+            { "system": "http://snomed.info/sct", "code": "700378005", "display": "Chronic kidney disease stage 3A" }
+          ],
+          "text": "Chronic kidney disease, stage 3a (eGFR 52)"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "onsetDateTime": "2025-02-08",
+        "recordedDate": "2025-02-08"
+      },
+      "request": { "method": "PUT", "url": "Condition/cond-ckd3a" }
+    },
+
+    {
+      "fullUrl": "Condition/cond-hld",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-hld",
+        "clinicalStatus": {
+          "coding": [
+            { "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            { "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status", "code": "confirmed" }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/condition-category", "code": "problem-list-item" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "E78.5", "display": "Hyperlipidemia, unspecified" },
+            { "system": "http://snomed.info/sct", "code": "55822004", "display": "Hyperlipidemia" }
+          ],
+          "text": "Hyperlipidemia"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "onsetDateTime": "2018-09-10",
+        "recordedDate": "2018-09-10"
+      },
+      "request": { "method": "PUT", "url": "Condition/cond-hld" }
+    },
+
+    {
+      "fullUrl": "Encounter/enc-2026-05-05-cardiology-fu",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "enc-2026-05-05-cardiology-fu",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "type": [
+          {
+            "coding": [
+              { "system": "http://snomed.info/sct", "code": "185389009", "display": "Follow-up visit" }
+            ],
+            "text": "Cardiology follow-up"
+          }
+        ],
+        "reasonCode": [
+          {
+            "text": "6-week follow-up after HFrEF medication titration"
+          }
+        ],
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "participant": [
+          {
+            "type": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "PPRF",
+                    "display": "primary performer"
+                  }
+                ]
+              }
+            ],
+            "individual": { "display": "Dr. James Chen" }
+          }
+        ],
+        "period": {
+          "start": "2026-05-05T14:00:00-07:00",
+          "end": "2026-05-05T14:30:00-07:00"
+        },
+        "serviceProvider": { "display": "San Diego Cardiology Clinic" }
+      },
+      "request": { "method": "PUT", "url": "Encounter/enc-2026-05-05-cardiology-fu" }
+    },
+
+    {
+      "fullUrl": "MedicationRequest/medreq-furosemide",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medreq-furosemide",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            { "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "4603", "display": "Furosemide" }
+          ],
+          "text": "furosemide"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "encounter": { "reference": "Encounter/enc-2026-05-05-cardiology-fu" },
+        "authoredOn": "2026-05-05",
+        "requester": { "display": "Dr. James Chen" },
+        "reasonCode": [
+          { "text": "trace ankle edema" }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "Take 20 mg PO PRN — only on days you notice puffy ankles or have gained more than 1 kg overnight",
+            "asNeededBoolean": true,
+            "route": {
+              "coding": [
+                { "system": "http://snomed.info/sct", "code": "26643006", "display": "Oral route" }
+              ]
+            },
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 20,
+                  "unit": "mg",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "mg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "request": { "method": "PUT", "url": "MedicationRequest/medreq-furosemide" }
+    },
+
+    {
+      "fullUrl": "MedicationRequest/medreq-metoprolol",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medreq-metoprolol",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            { "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "221124", "display": "Metoprolol succinate 50 MG Extended Release Oral Tablet" }
+          ],
+          "text": "metoprolol succinate"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "authoredOn": "2026-03-24",
+        "requester": { "display": "Dr. James Chen" },
+        "reasonCode": [
+          { "text": "Heart-failure beta-blocker (uptitrated 6 weeks ago to 50 mg)" }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "50 mg PO daily",
+            "timing": { "code": { "text": "daily" } },
+            "route": {
+              "coding": [
+                { "system": "http://snomed.info/sct", "code": "26643006", "display": "Oral route" }
+              ]
+            },
+            "doseAndRate": [
+              { "doseQuantity": { "value": 50, "unit": "mg", "system": "http://unitsofmeasure.org", "code": "mg" } }
+            ]
+          }
+        ]
+      },
+      "request": { "method": "PUT", "url": "MedicationRequest/medreq-metoprolol" }
+    },
+
+    {
+      "fullUrl": "MedicationRequest/medreq-empagliflozin",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medreq-empagliflozin",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            { "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "1545653", "display": "Empagliflozin 10 MG Oral Tablet" }
+          ],
+          "text": "empagliflozin"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "authoredOn": "2026-03-24",
+        "requester": { "display": "Dr. James Chen" },
+        "reasonCode": [
+          { "text": "Heart-failure SGLT2 inhibitor (started 6 weeks ago)" }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "10 mg PO daily",
+            "timing": { "code": { "text": "daily" } },
+            "route": {
+              "coding": [
+                { "system": "http://snomed.info/sct", "code": "26643006", "display": "Oral route" }
+              ]
+            },
+            "doseAndRate": [
+              { "doseQuantity": { "value": 10, "unit": "mg", "system": "http://unitsofmeasure.org", "code": "mg" } }
+            ]
+          }
+        ]
+      },
+      "request": { "method": "PUT", "url": "MedicationRequest/medreq-empagliflozin" }
+    },
+
+    {
+      "fullUrl": "MedicationRequest/medreq-lisinopril",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medreq-lisinopril",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            { "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "29046", "display": "Lisinopril" }
+          ],
+          "text": "lisinopril"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "authoredOn": "2015-06-15",
+        "reasonCode": [
+          { "text": "HFrEF / HTN" }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "20 mg PO daily",
+            "timing": { "code": { "text": "daily" } },
+            "route": {
+              "coding": [
+                { "system": "http://snomed.info/sct", "code": "26643006", "display": "Oral route" }
+              ]
+            },
+            "doseAndRate": [
+              { "doseQuantity": { "value": 20, "unit": "mg", "system": "http://unitsofmeasure.org", "code": "mg" } }
+            ]
+          }
+        ]
+      },
+      "request": { "method": "PUT", "url": "MedicationRequest/medreq-lisinopril" }
+    },
+
+    {
+      "fullUrl": "MedicationRequest/medreq-atorvastatin",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medreq-atorvastatin",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            { "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "83367", "display": "Atorvastatin" }
+          ],
+          "text": "atorvastatin"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "authoredOn": "2018-09-10",
+        "reasonCode": [
+          { "text": "Hyperlipidemia" }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "40 mg PO QHS (every night at bedtime)",
+            "timing": { "code": { "text": "QHS" } },
+            "route": {
+              "coding": [
+                { "system": "http://snomed.info/sct", "code": "26643006", "display": "Oral route" }
+              ]
+            },
+            "doseAndRate": [
+              { "doseQuantity": { "value": 40, "unit": "mg", "system": "http://unitsofmeasure.org", "code": "mg" } }
+            ]
+          }
+        ]
+      },
+      "request": { "method": "PUT", "url": "MedicationRequest/medreq-atorvastatin" }
+    },
+
+    {
+      "fullUrl": "MedicationRequest/medreq-metformin",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medreq-metformin",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            { "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "6809", "display": "Metformin" }
+          ],
+          "text": "metformin"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "authoredOn": "2018-04-22",
+        "reasonCode": [
+          { "text": "T2DM (eGFR 52, still safe)" }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "1000 mg PO BID",
+            "timing": { "code": { "text": "BID" } },
+            "route": {
+              "coding": [
+                { "system": "http://snomed.info/sct", "code": "26643006", "display": "Oral route" }
+              ]
+            },
+            "doseAndRate": [
+              { "doseQuantity": { "value": 1000, "unit": "mg", "system": "http://unitsofmeasure.org", "code": "mg" } }
+            ]
+          }
+        ]
+      },
+      "request": { "method": "PUT", "url": "MedicationRequest/medreq-metformin" }
+    },
+
+    {
+      "fullUrl": "ServiceRequest/srvreq-bmp",
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "srvreq-bmp",
+        "status": "active",
+        "intent": "order",
+        "category": [
+          {
+            "coding": [
+              { "system": "http://snomed.info/sct", "code": "108252007", "display": "Laboratory procedure" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "24323-8", "display": "Comprehensive metabolic 2000 panel - Serum or Plasma" }
+          ],
+          "text": "Basic metabolic panel (BMP)"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "encounter": { "reference": "Encounter/enc-2026-05-05-cardiology-fu" },
+        "authoredOn": "2026-05-05",
+        "occurrenceDateTime": "2026-05-19",
+        "requester": { "display": "Dr. James Chen" },
+        "reasonCode": [
+          { "text": "Monitor K+, eGFR after starting PRN diuretic" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "ServiceRequest/srvreq-bmp" }
+    },
+
+    {
+      "fullUrl": "ServiceRequest/srvreq-bnp",
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "srvreq-bnp",
+        "status": "active",
+        "intent": "order",
+        "category": [
+          {
+            "coding": [
+              { "system": "http://snomed.info/sct", "code": "108252007", "display": "Laboratory procedure" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "42637-9", "display": "Natriuretic peptide.B prohormone N-Terminal [Mass/volume] in Serum or Plasma" }
+          ],
+          "text": "BNP"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "encounter": { "reference": "Encounter/enc-2026-05-05-cardiology-fu" },
+        "authoredOn": "2026-05-05",
+        "occurrenceDateTime": "2026-05-19",
+        "requester": { "display": "Dr. James Chen" },
+        "reasonCode": [
+          { "text": "Heart-failure monitoring" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "ServiceRequest/srvreq-bnp" }
+    },
+
+    {
+      "fullUrl": "ServiceRequest/srvreq-echo",
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "srvreq-echo",
+        "status": "active",
+        "intent": "order",
+        "category": [
+          {
+            "coding": [
+              { "system": "http://snomed.info/sct", "code": "363679005", "display": "Imaging" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "34552-0", "display": "Echocardiography study" }
+          ],
+          "text": "Echocardiogram"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "encounter": { "reference": "Encounter/enc-2026-05-05-cardiology-fu" },
+        "authoredOn": "2026-05-05",
+        "occurrenceDateTime": "2026-06-30",
+        "requester": { "display": "Dr. James Chen" },
+        "reasonCode": [
+          { "text": "Repeat EF assessment" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "ServiceRequest/srvreq-echo" }
+    },
+
+    {
+      "fullUrl": "Appointment/appt-cardiology-fu-8wk",
+      "resource": {
+        "resourceType": "Appointment",
+        "id": "appt-cardiology-fu-8wk",
+        "status": "booked",
+        "serviceType": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/service-type", "code": "75", "display": "Cardiology" }
+            ]
+          }
+        ],
+        "appointmentType": {
+          "coding": [
+            { "system": "http://terminology.hl7.org/CodeSystem/v2-0276", "code": "FOLLOWUP", "display": "A follow up visit from a previous appointment" }
+          ]
+        },
+        "reasonCode": [
+          { "text": "8-week cardiology follow-up with Dr. Chen" }
+        ],
+        "description": "Cardiology follow-up — 8 weeks",
+        "start": "2026-06-30T14:00:00-07:00",
+        "end": "2026-06-30T14:30:00-07:00",
+        "minutesDuration": 30,
+        "participant": [
+          {
+            "actor": { "reference": "Patient/hapi-garcia-maria", "display": "María Garcia" },
+            "required": "required",
+            "status": "accepted"
+          },
+          {
+            "actor": { "display": "Dr. James Chen" },
+            "required": "required",
+            "status": "accepted"
+          }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Appointment/appt-cardiology-fu-8wk" }
+    },
+
+    {
+      "fullUrl": "Observation/obs-bp-2026-05-05",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-bp-2026-05-05",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "vital-signs", "display": "Vital Signs" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "85354-9", "display": "Blood pressure panel with all children optional" }
+          ],
+          "text": "Blood pressure"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "encounter": { "reference": "Encounter/enc-2026-05-05-cardiology-fu" },
+        "effectiveDateTime": "2026-05-05T14:05:00-07:00",
+        "component": [
+          {
+            "code": {
+              "coding": [
+                { "system": "http://loinc.org", "code": "8480-6", "display": "Systolic blood pressure" }
+              ]
+            },
+            "valueQuantity": { "value": 128, "unit": "mm[Hg]", "system": "http://unitsofmeasure.org", "code": "mm[Hg]" }
+          },
+          {
+            "code": {
+              "coding": [
+                { "system": "http://loinc.org", "code": "8462-4", "display": "Diastolic blood pressure" }
+              ]
+            },
+            "valueQuantity": { "value": 76, "unit": "mm[Hg]", "system": "http://unitsofmeasure.org", "code": "mm[Hg]" }
+          }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Observation/obs-bp-2026-05-05" }
+    },
+
+    {
+      "fullUrl": "Observation/obs-hr-2026-05-05",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-hr-2026-05-05",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "vital-signs", "display": "Vital Signs" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "8867-4", "display": "Heart rate" }
+          ],
+          "text": "Heart rate"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "encounter": { "reference": "Encounter/enc-2026-05-05-cardiology-fu" },
+        "effectiveDateTime": "2026-05-05T14:05:00-07:00",
+        "valueQuantity": { "value": 72, "unit": "/min", "system": "http://unitsofmeasure.org", "code": "/min" }
+      },
+      "request": { "method": "PUT", "url": "Observation/obs-hr-2026-05-05" }
+    },
+
+    {
+      "fullUrl": "Observation/obs-weight-2026-05-05",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-weight-2026-05-05",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "vital-signs", "display": "Vital Signs" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "29463-7", "display": "Body weight" }
+          ],
+          "text": "Body weight"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "encounter": { "reference": "Encounter/enc-2026-05-05-cardiology-fu" },
+        "effectiveDateTime": "2026-05-05T14:02:00-07:00",
+        "valueQuantity": { "value": 78.2, "unit": "kg", "system": "http://unitsofmeasure.org", "code": "kg" }
+      },
+      "request": { "method": "PUT", "url": "Observation/obs-weight-2026-05-05" }
+    },
+
+    {
+      "fullUrl": "Observation/obs-weight-2026-03-24",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-weight-2026-03-24",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "vital-signs", "display": "Vital Signs" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "29463-7", "display": "Body weight" }
+          ],
+          "text": "Body weight"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "effectiveDateTime": "2026-03-24T10:00:00-07:00",
+        "valueQuantity": { "value": 80.0, "unit": "kg", "system": "http://unitsofmeasure.org", "code": "kg" }
+      },
+      "request": { "method": "PUT", "url": "Observation/obs-weight-2026-03-24" }
+    },
+
+    {
+      "fullUrl": "Observation/obs-egfr-2026-05-05",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-egfr-2026-05-05",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "laboratory", "display": "Laboratory" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "33914-3", "display": "Glomerular filtration rate/1.73 sq M.predicted by Creatinine-based formula (MDRD)" }
+          ],
+          "text": "eGFR"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "effectiveDateTime": "2026-04-28",
+        "valueQuantity": { "value": 52, "unit": "mL/min/1.73m2", "system": "http://unitsofmeasure.org", "code": "mL/min/{1.73_m2}" },
+        "referenceRange": [
+          { "low": { "value": 60 }, "text": ">60 mL/min/1.73m2" }
+        ],
+        "interpretation": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation", "code": "L", "display": "Low" }
+            ]
+          }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Observation/obs-egfr-2026-05-05" }
+    },
+
+    {
+      "fullUrl": "Observation/obs-k-2026-05-05",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-k-2026-05-05",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "laboratory", "display": "Laboratory" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "2823-3", "display": "Potassium [Moles/volume] in Serum or Plasma" }
+          ],
+          "text": "Potassium"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "effectiveDateTime": "2026-04-28",
+        "valueQuantity": { "value": 4.4, "unit": "mmol/L", "system": "http://unitsofmeasure.org", "code": "mmol/L" },
+        "referenceRange": [
+          { "low": { "value": 3.5 }, "high": { "value": 5.0 }, "text": "3.5–5.0 mmol/L" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Observation/obs-k-2026-05-05" }
+    },
+
+    {
+      "fullUrl": "Observation/obs-a1c-2026-02-15",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-a1c-2026-02-15",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "laboratory", "display": "Laboratory" }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "4548-4", "display": "Hemoglobin A1c/Hemoglobin.total in Blood" }
+          ],
+          "text": "Hemoglobin A1c"
+        },
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "effectiveDateTime": "2026-02-15",
+        "valueQuantity": { "value": 7.8, "unit": "%", "system": "http://unitsofmeasure.org", "code": "%" },
+        "referenceRange": [
+          { "high": { "value": 7.0 }, "text": "<7.0% (target for diabetes)" }
+        ],
+        "interpretation": [
+          {
+            "coding": [
+              { "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation", "code": "H", "display": "High" }
+            ]
+          }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Observation/obs-a1c-2026-02-15" }
+    },
+
+    {
+      "fullUrl": "DocumentReference/docref-visit-summary-2026-05-05",
+      "resource": {
+        "resourceType": "DocumentReference",
+        "id": "docref-visit-summary-2026-05-05",
+        "status": "current",
+        "docStatus": "final",
+        "type": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "11506-3", "display": "Progress note" }
+          ],
+          "text": "Cardiology follow-up progress note"
+        },
+        "category": [
+          {
+            "coding": [
+              { "system": "http://loinc.org", "code": "47039-3", "display": "Hospital Admission history and physical note" }
+            ]
+          }
+        ],
+        "subject": { "reference": "Patient/hapi-garcia-maria" },
+        "date": "2026-05-05T14:30:00-07:00",
+        "author": [
+          { "display": "Dr. James Chen" }
+        ],
+        "description": "Clinician-authored visit summary for the 2026-05-05 cardiology follow-up.",
+        "content": [
+          {
+            "attachment": {
+              "contentType": "text/plain; charset=utf-8",
+              "language": "en",
+              "title": "Visit summary — 2026-05-05",
+              "data": "Njd5byBGIHdpdGggSEZyRUYgKEVGIDM4JSksIFQyRE0sIENLRDNhLCBIVE4sIGhlcmUgZm9yIDYtd2VlayBmL3UgYWZ0ZXIgbWV0b3Byb2xvbCBzdWNjaW5hdGUgdXB0aXRyYXRpb24gdG8gNTBtZyBkYWlseSBhbmQgYWRkaXRpb24gb2YgZW1wYWdsaWZsb3ppbiAxMG1nIGRhaWx5LiBCUCB0b2RheSAxMjgvNzYuIEhSIDcyLiBXdCBkb3duIDEuOCBrZyBmcm9tIGJhc2VsaW5lLiBSZXBvcnRzIGltcHJvdmVkIGV4ZXJ0aW9uYWwgZHlzcG5lYS4gZUdGUiBzdGFibGUgYXQgNTIuIEsrIDQuNC4gUGxhbjogY29udGludWUgY3VycmVudCByZWdpbWVuLCByZXBlYXQgQk1QIGFuZCBCTlAgaW4gMiB3ZWVrcywgcmV0dXJuIHZpc2l0IGluIDggd2Vla3MuIFBhdGllbnQgZWR1Y2F0aW9uIHByb3ZpZGVkIG9uIGhlYXJ0LWZhaWx1cmUgc2VsZi1tb25pdG9yaW5nIChkYWlseSB3ZWlnaHRzLCBzYWx0LCBmbHVpZCBiYWxhbmNlKS4gRGF1Z2h0ZXIgcHJlc2VudCwgcmVpbmZvcmNlZCB0ZWFjaGluZy4gTmV3IFBSTjogZnVyb3NlbWlkZSAyMG1nIFBPIFBSTiBmb3IgdHJhY2UgYW5rbGUgZWRlbWEgLS0gdGFrZSBvbmx5IG9uIGRheXMgdGhlIHBhdGllbnQgbm90aWNlcyBwdWZmeSBhbmtsZXMgb3IgcmFwaWQgd2VpZ2h0IGdhaW4u"
+            },
+            "format": {
+              "system": "http://ihe.net/fhir/ValueSet/IHE.FormatCode.codesystem",
+              "code": "urn:ihe:iti:xds:2017:mimeTypeSufficient"
+            }
+          }
+        ],
+        "context": {
+          "encounter": [{ "reference": "Encounter/enc-2026-05-05-cardiology-fu" }],
+          "period": {
+            "start": "2026-05-05T14:00:00-07:00",
+            "end": "2026-05-05T14:30:00-07:00"
+          }
+        }
+      },
+      "request": { "method": "PUT", "url": "DocumentReference/docref-visit-summary-2026-05-05" }
+    }
+  ]
+}

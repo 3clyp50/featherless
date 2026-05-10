@@ -40,7 +40,14 @@ function hashId(input: string): string {
 function deepMerge(base: Dict, override: Dict): Dict {
   for (const [k, v] of Object.entries(override)) {
     const cur = base[k];
-    if (cur && typeof cur === "object" && !Array.isArray(cur) && v && typeof v === "object" && !Array.isArray(v)) {
+    if (
+      cur &&
+      typeof cur === "object" &&
+      !Array.isArray(cur) &&
+      v &&
+      typeof v === "object" &&
+      !Array.isArray(v)
+    ) {
       deepMerge(cur as Dict, v as Dict);
     } else {
       base[k] = v;
@@ -255,7 +262,10 @@ export function buildVisitFrequencyChart(visits: Dict[]): string {
 // ====
 
 const PROBLEM_BUCKETS: { name: string; terms: string[] }[] = [
-  { name: "Cardiovascular", terms: ["heart", "hypertension", "cardio", "blood pressure", "cholesterol"] },
+  {
+    name: "Cardiovascular",
+    terms: ["heart", "hypertension", "cardio", "blood pressure", "cholesterol"],
+  },
   { name: "Endocrine", terms: ["diabetes", "thyroid", "obesity", "metabolic"] },
   { name: "Respiratory", terms: ["asthma", "copd", "respiratory", "lung", "breathing"] },
   { name: "Musculoskeletal", terms: ["arthritis", "pain", "back", "joint", "osteo"] },
@@ -264,7 +274,14 @@ const PROBLEM_BUCKETS: { name: string; terms: string[] }[] = [
 
 export function buildProblemDistributionChart(problems: Dict[]): string {
   if (!problems.length) return "";
-  const counts: Record<string, number> = { Cardiovascular: 0, Endocrine: 0, Respiratory: 0, Musculoskeletal: 0, "Mental Health": 0, Other: 0 };
+  const counts: Record<string, number> = {
+    Cardiovascular: 0,
+    Endocrine: 0,
+    Respiratory: 0,
+    Musculoskeletal: 0,
+    "Mental Health": 0,
+    Other: 0,
+  };
   for (const p of problems) {
     const name = ((p.name as string) ?? "").toLowerCase();
     const bucket = PROBLEM_BUCKETS.find((b) => b.terms.some((t) => name.includes(t)));
@@ -312,8 +329,7 @@ export function buildMedicationTimeline(medications: Dict[]): string {
   const now = Date.now();
   for (const med of medications.slice(0, 15)) {
     labels.push(((med.name as string) ?? "Unknown").slice(0, 35));
-    const start =
-      (med.authored_on as string) ?? (med.start_date as string) ?? "";
+    const start = (med.authored_on as string) ?? (med.start_date as string) ?? "";
     let startMs = now;
     if (start) {
       const t = Date.parse(start.slice(0, 10));
@@ -334,7 +350,9 @@ export function buildMedicationTimeline(medications: Dict[]): string {
     chartId: `med_timeline_${hashId(labels.join("|"))}`,
     chartType: "bar",
     labels,
-    datasets: [{ label: "Days on medication", data: durations, backgroundColor: bg, borderRadius: 4 }],
+    datasets: [
+      { label: "Days on medication", data: durations, backgroundColor: bg, borderRadius: 4 },
+    ],
     title: "Active Medications",
     xAxisLabel: "Days on medication",
     optionsOverride: { indexAxis: "y", scales: { x: { title: { display: true, text: "Days" } } } },

@@ -1,14 +1,14 @@
 /**
- * FHIRClient tests — hits the public HAPI R4 sandbox. No mocks.
+ * FHIRClient tests — hits local synthetic HAPI R4. No mocks.
  *
- * HAPI is anonymous-readable: https://hapi.fhir.org/baseR4
+ * Load the hero bundle with `npx tsx scripts/load-hero.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { FHIRClient, FHIRError } from "../src/clients/fhir-client.ts";
 
-const HAPI = "https://hapi.fhir.org/baseR4";
+const HAPI = "http://127.0.0.1:8080/fhir";
 
-describe("FHIRClient against live HAPI sandbox", () => {
+describe("FHIRClient against local HAPI", () => {
   it("fetches CapabilityStatement", async () => {
     const fhir = new FHIRClient({ baseUrl: HAPI });
     const cap = await fhir.getCapabilityStatement();
@@ -33,7 +33,7 @@ describe("FHIRClient against live HAPI sandbox", () => {
 
   it("searches Patient with a name filter and returns a Bundle", async () => {
     const fhir = new FHIRClient({ baseUrl: HAPI });
-    const bundle = await fhir.searchPatients({ name: "Smith", count: 5 });
+    const bundle = await fhir.searchPatients({ name: "Garcia", count: 5 });
     expect(bundle.resourceType).toBe("Bundle");
     expect(Array.isArray(bundle.entry ?? [])).toBe(true);
   });

@@ -2,20 +2,11 @@
  * Generic FHIR R4 read/search MCP tools — vendor-neutral.
  */
 import { z } from "zod";
-import type { McpServer } from "../mcp/server.ts";
 import { FHIRError } from "../clients/fhir-client.ts";
+import { bundleNextLink, bundleToResources, bundleTotal, patientSummary } from "../fhir-utils.ts";
+import type { McpServer } from "../mcp/server.ts";
 import { ResourceTypeSchema } from "../models/types.ts";
-import {
-  bundleNextLink,
-  bundleToResources,
-  bundleTotal,
-  patientSummary,
-} from "../fhir-utils.ts";
-import {
-  checkFhirContext,
-  fhirClientForCurrentContext,
-  resolvePatientId,
-} from "./_helpers.ts";
+import { checkFhirContext, fhirClientForCurrentContext, resolvePatientId } from "./_helpers.ts";
 
 export function registerFhirTools(server: McpServer): void {
   server.tool(
@@ -29,17 +20,25 @@ export function registerFhirTools(server: McpServer): void {
         const fhir = fhirClientForCurrentContext();
         const cap = await fhir.getCapabilityStatement();
         const rest = (Array.isArray(cap.rest) && cap.rest[0]) || {};
-        const resources = (Array.isArray(rest.resource) ? rest.resource : []) as Record<string, unknown>[];
+        const resources = (Array.isArray(rest.resource) ? rest.resource : []) as Record<
+          string,
+          unknown
+        >[];
         return {
           fhir_version: cap.fhirVersion ?? null,
           status: cap.status ?? null,
           publisher: cap.publisher ?? null,
           software: ((cap.software ?? {}) as Record<string, unknown>).name ?? null,
-          implementation: ((cap.implementation ?? {}) as Record<string, unknown>).description ?? null,
+          implementation:
+            ((cap.implementation ?? {}) as Record<string, unknown>).description ?? null,
           supported_resources: resources.slice(0, 30).map((r) => ({
             type: r.type ?? null,
-            interactions: ((r.interaction as { code?: string }[] | undefined) ?? []).map((i) => i.code ?? null),
-            search_params: ((r.searchParam as { name?: string }[] | undefined) ?? []).map((p) => p.name ?? null),
+            interactions: ((r.interaction as { code?: string }[] | undefined) ?? []).map(
+              (i) => i.code ?? null,
+            ),
+            search_params: ((r.searchParam as { name?: string }[] | undefined) ?? []).map(
+              (p) => p.name ?? null,
+            ),
           })),
           security: rest.security ?? {},
           total_resource_types: resources.length,
@@ -76,7 +75,10 @@ export function registerFhirTools(server: McpServer): void {
     z.object({
       resource_type: ResourceTypeSchema,
       patient_id: z.string().optional(),
-      params: z.string().optional().describe("Additional query string params, e.g. category=vital-signs&_sort=-date"),
+      params: z
+        .string()
+        .optional()
+        .describe("Additional query string params, e.g. category=vital-signs&_sort=-date"),
       count: z.number().int().min(1).max(250).default(25),
     }),
     async ({ resource_type, patient_id, params, count }) => {

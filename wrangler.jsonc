@@ -8,20 +8,9 @@
   "vars": {
     "SHARP_STRICT_CONTEXT": "0",
     "FEATHERLESS_DEV_MODE": "0",
-    "MEM0_DISABLED": "0"
+    "MEM0_DISABLED": "1",
+    "WRITE_BACK": "0",
+    "LLM_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
   },
-  "ai": { "binding": "AI" },
-  "vectorize": [
-    {
-      "binding": "MEMORY_INDEX",
-      "index_name": "featherless-memory"
-    }
-  ],
-  "d1_databases": [
-    {
-      "binding": "MEMORY_META",
-      "database_name": "featherless-memory-meta",
-      "database_id": "REPLACE_WITH_D1_ID"
-    }
-  ]
+  "ai": { "binding": "AI" }
 }

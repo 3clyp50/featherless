@@ -13,10 +13,16 @@ describe("zodToJsonSchema", () => {
       active_only: z.boolean().default(true),
       gender: z.enum(["male", "female", "other"]).optional(),
     });
-    const out = zodToJsonSchema(schema) as { type: string; properties: Record<string, unknown>; required?: string[] };
+    const out = zodToJsonSchema(schema) as {
+      type: string;
+      properties: Record<string, unknown>;
+      required?: string[];
+    };
     expect(out.type).toBe("object");
     expect((out.properties.patient_id as { type: string }).type).toBe("string");
-    expect((out.properties.count as { type: string; minimum: number; maximum: number; default: number })).toMatchObject({
+    expect(
+      out.properties.count as { type: string; minimum: number; maximum: number; default: number },
+    ).toMatchObject({
       type: "integer",
       minimum: 1,
       maximum: 250,

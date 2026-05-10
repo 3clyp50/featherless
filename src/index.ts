@@ -1,3 +1,4 @@
+import { hasFhir, parseSharpHeaders, runWithContext } from "./context.ts";
 /**
  * Worker entry point. Routes:
  *   POST /mcp  — JSON-RPC over Streamable HTTP (single request → single response)
@@ -8,13 +9,17 @@
  * from request headers (per SHARP-on-MCP §3.2).
  */
 import type { Env } from "./env.ts";
-import { buildServer, SERVER_NAME, SERVER_VERSION } from "./server.ts";
-import { parseSharpHeaders, runWithContext, hasFhir } from "./context.ts";
+import { SERVER_NAME, SERVER_VERSION, buildServer } from "./server.ts";
 
 export type { Env };
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
-const HANDSHAKE_METHODS = new Set(["initialize", "notifications/initialized", "tools/list", "ping"]);
+const HANDSHAKE_METHODS = new Set([
+  "initialize",
+  "notifications/initialized",
+  "tools/list",
+  "ping",
+]);
 
 async function handleMcp(request: Request, env: Env): Promise<Response> {
   if (request.method !== "POST") {
@@ -35,7 +40,10 @@ async function handleMcp(request: Request, env: Env): Promise<Response> {
   const ctx = parseSharpHeaders(request, env);
   const strict = env.SHARP_STRICT_CONTEXT === "1";
 
-  const dispatch = async (msg: { method?: string; id?: string | number | null }): Promise<unknown> => {
+  const dispatch = async (msg: {
+    method?: string;
+    id?: string | number | null;
+  }): Promise<unknown> => {
     const server = buildServer(env);
 
     // Strict mode: reject tools/call without context (handshake passes through).

@@ -5,15 +5,11 @@
  * `register_memory_tools(mcp, None)` is a no-op).
  */
 import { z } from "zod";
-import type { McpServer } from "../mcp/server.ts";
-import type { MemoryClient } from "../clients/memory-client.ts";
 import { FHIRError } from "../clients/fhir-client.ts";
+import type { MemoryClient } from "../clients/memory-client.ts";
 import { patientDisplayName } from "../fhir-utils.ts";
-import {
-  checkFhirContext,
-  fhirClientForCurrentContext,
-  resolvePatientId,
-} from "./_helpers.ts";
+import type { McpServer } from "../mcp/server.ts";
+import { checkFhirContext, fhirClientForCurrentContext, resolvePatientId } from "./_helpers.ts";
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(Math.max(n, lo), hi);
 
@@ -81,7 +77,11 @@ export function registerMemoryTools(server: McpServer, memory: MemoryClient | nu
     "memory_store_alert",
     "Store a persistent clinical alert/flag for the patient.",
     z.object({
-      alert_type: z.string().describe("allergy | drug_interaction | lab_critical | patient_preference | behavioral | follow_up | other"),
+      alert_type: z
+        .string()
+        .describe(
+          "allergy | drug_interaction | lab_critical | patient_preference | behavioral | follow_up | other",
+        ),
       alert_content: z.string(),
       severity: z.enum(["info", "warning", "critical"]).default("warning"),
       patient_id: z.string().optional(),
@@ -116,7 +116,10 @@ export function registerMemoryTools(server: McpServer, memory: MemoryClient | nu
     "Store a free-text clinical note tagged to the patient. Use for notes derived from non-text inputs (radiology read summaries, audio-dictation transcripts, video-clip descriptions). The agent host is responsible for VLM/Whisper/etc pre-processing — this tool only persists text.",
     z.object({
       note: z.string(),
-      note_type: z.string().default("general").describe("radiology | transcript | video_summary | general | ..."),
+      note_type: z
+        .string()
+        .default("general")
+        .describe("radiology | transcript | video_summary | general | ..."),
       patient_id: z.string().optional(),
     }),
     async ({ note, note_type, patient_id }) => {
@@ -124,9 +127,13 @@ export function registerMemoryTools(server: McpServer, memory: MemoryClient | nu
       if (err) return err;
       const pid = resolvePatientId(patient_id) ?? "";
       try {
-        const result = await memory.addFact(pid, `Note (${note_type}) for FHIR Patient/${pid}: ${note}`, {
-          factType: note_type,
-        });
+        const result = await memory.addFact(
+          pid,
+          `Note (${note_type}) for FHIR Patient/${pid}: ${note}`,
+          {
+            factType: note_type,
+          },
+        );
         return { success: true, patient_id: pid, ids: result.ids, facts: result.facts };
       } catch (e) {
         return { success: false, error: e instanceof Error ? e.message : String(e) };
