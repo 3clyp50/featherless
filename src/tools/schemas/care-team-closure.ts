@@ -41,7 +41,7 @@ export const careTeamClosureOutputSchema = z.object({
   generated_at: z.string(),
   write_back_requested: z.boolean(),
   write_back_enabled: z.boolean(),
-  resources: z.array(z.record(z.unknown())),
+  resources: z.array(z.record(z.string(), z.unknown())),
   validation_results: z.array(validationResultShape),
   write_results: z.array(writeResultShape).optional(),
 });
