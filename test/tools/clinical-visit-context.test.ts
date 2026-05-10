@@ -47,7 +47,7 @@ const sharpHeaders = {
 function looksLikeUnreachableUpstream(structured: unknown): boolean {
   if (!structured || typeof structured !== "object") return false;
   const err = (structured as { error?: unknown }).error;
-  return err === "fhir_error" || err === "fhir_context_required";
+  return err === "fhir_error";
 }
 
 describe("clinical_pack_visit_context", () => {
@@ -101,10 +101,9 @@ describe("clinical_pack_visit_context", () => {
 
     // Medication changes — 6 active meds; furosemide is the only "new" one (authoredOn 2026-05-05).
     expect(ctx.medication_changes.length).toBe(6);
-    const firstMed = ctx.medication_changes[0];
-    expect(firstMed, "expected at least one medication_changes entry").toBeDefined();
-    expect(firstMed?.action).toBe("new");
-    expect(firstMed?.name.toLowerCase()).toContain("furosemide");
+    const newMed = ctx.medication_changes.find((m) => m.action === "new");
+    expect(newMed, "expected one new medication entry").toBeDefined();
+    expect(newMed?.name.toLowerCase()).toContain("furosemide");
     const newCount = ctx.medication_changes.filter((m) => m.action === "new").length;
     expect(newCount).toBe(1);
 

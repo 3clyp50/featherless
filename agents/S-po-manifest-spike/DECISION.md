@@ -86,9 +86,9 @@ Canonical structure (extracted from `../../po-adk-typescript/shared/appFactory.t
 ## Sources consulted
 
 - PO docs (provided by user via paste): "External Agents", "BYO Agents", "FHIR Context With A2A", "FHIR Context With MCP" sections of `docs.promptopinion.ai`.
-- Local clone: `../po-adk-typescript/README.md` — "Connecting to Prompt Opinion" section.
-- Local clone: `../po-adk-typescript/shared/appFactory.ts` — `createA2aApp()` and the AgentCard literal at lines 257-278.
-- Local clone: `../po-adk-typescript/package.json` — confirms `@a2a-js/sdk ^0.3.10` + `express ^4.21.0` are the reference deps (incompatible with Workers; informs the hand-roll caveat).
+- Local clone: `../../po-adk-typescript/README.md` — "Connecting to Prompt Opinion" section.
+- Local clone: `../../po-adk-typescript/shared/appFactory.ts` — `createA2aApp()` and the AgentCard literal at lines 257-278.
+- Local clone: `../../po-adk-typescript/package.json` — confirms `@a2a-js/sdk ^0.3.10` + `express ^4.21.0` are the reference deps (incompatible with Workers; informs the hand-roll caveat).
 
 ## Open questions (non-blocking)
 

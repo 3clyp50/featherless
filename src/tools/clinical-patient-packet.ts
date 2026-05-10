@@ -35,6 +35,112 @@ interface GeneratePatientPacketOpts {
 
 const DEFAULT_WORKERS_AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
+interface PacketLabels {
+  titlePrefix: string;
+  whatWeDidTodayHeading: string;
+  medicationsHeading: string;
+  actionHeader: string;
+  medicineHeader: string;
+  doseHeader: string;
+  instructionsHeader: string;
+  newLabel: string;
+  continueLabel: string;
+  newMedicationInstructions: string;
+  continueMedicationInstructions: string;
+  noMedicationChangeWatch: string;
+  watchBeforeUsing: (name: string, dose: string) => string;
+  dailyWeight: string;
+  medicationQuestion: string;
+  timingPrefix: string;
+  visitSummary: string;
+  watchForHeading: string;
+  nextStepsHeading: string;
+  whenToCallHeading: string;
+  whenToGoToErHeading: string;
+  whenToCall: string[];
+  whenToGoToEr: string[];
+  citationsFooter: string;
+}
+
+function isSpanish(language: string): boolean {
+  return language.toLowerCase().startsWith("es");
+}
+
+function labelsFor(language: string): PacketLabels {
+  if (isSpanish(language)) {
+    return {
+      titlePrefix: "Su plan de visita",
+      whatWeDidTodayHeading: "## Lo que hicimos hoy",
+      medicationsHeading: "## Sus medicinas ahora",
+      actionHeader: "Acción",
+      medicineHeader: "Medicina",
+      doseHeader: "Dosis",
+      instructionsHeader: "Instrucciones",
+      newLabel: "NUEVA",
+      continueLabel: "Continuar",
+      newMedicationInstructions: "Use esta medicina solo como le indicó su equipo.",
+      continueMedicationInstructions: "Siga tomándola igual.",
+      noMedicationChangeWatch: "Revise si sus síntomas cambian.",
+      watchBeforeUsing: (name, dose) =>
+        `Revise si sus tobillos se hinchan antes de usar ${name} ${dose}.`,
+      dailyWeight: "Pésese cada mañana y anote el número.",
+      medicationQuestion: "Llame si falta una medicina o no entiende una instrucción.",
+      timingPrefix: " en ",
+      visitSummary:
+        "Hoy revisamos su corazón, sus medicinas y sus próximos estudios. Su presión y sus análisis recientes están en el plan de cuidado.",
+      watchForHeading: "## Qué vigilar",
+      nextStepsHeading: "## Próximos pasos",
+      whenToCallHeading: "## Cuándo llamarnos",
+      whenToGoToErHeading: "## Cuándo ir a emergencias",
+      whenToCall: [
+        "Llame al equipo de cardiología si sube más de 1 kg en un día.",
+        "Llame si sus tobillos se hinchan más o si se siente peor.",
+      ],
+      whenToGoToEr: [
+        "Vaya a emergencias si le falta el aire estando sentada.",
+        "Vaya a emergencias si tiene dolor fuerte en el pecho.",
+      ],
+      citationsFooter:
+        "Este resumen usa lenguaje claro y pasos de acción para pacientes [CIT-001, CIT-005, CIT-006].",
+    };
+  }
+  return {
+    titlePrefix: "Your visit plan",
+    whatWeDidTodayHeading: "## What we did today",
+    medicationsHeading: "## Your medicines now",
+    actionHeader: "Action",
+    medicineHeader: "Medicine",
+    doseHeader: "Dose",
+    instructionsHeader: "Instructions",
+    newLabel: "NEW",
+    continueLabel: "Continue",
+    newMedicationInstructions: "Use this medicine only as your care team directed.",
+    continueMedicationInstructions: "Keep taking it the same way.",
+    noMedicationChangeWatch: "Watch for any change in your symptoms.",
+    watchBeforeUsing: (name, dose) =>
+      `Check whether your ankles are swollen before using ${name} ${dose}.`,
+    dailyWeight: "Weigh yourself every morning and write down the number.",
+    medicationQuestion: "Call if a medicine is missing or an instruction is unclear.",
+    timingPrefix: " in ",
+    visitSummary:
+      "Today we reviewed your heart, medicines, and next studies. Your blood pressure and recent labs are part of the care plan.",
+    watchForHeading: "## What to watch for",
+    nextStepsHeading: "## Next steps",
+    whenToCallHeading: "## When to call us",
+    whenToGoToErHeading: "## When to go to the ER",
+    whenToCall: [
+      "Call the cardiology team if your weight goes up more than 1 kg in one day.",
+      "Call if your ankles swell more or you feel worse.",
+    ],
+    whenToGoToEr: [
+      "Go to the ER if you are short of breath while sitting.",
+      "Go to the ER if you have strong chest pain.",
+    ],
+    citationsFooter:
+      "This summary uses plain language and action steps for patients [CIT-001, CIT-005, CIT-006].",
+  };
+}
+
 function textFromVisitContext(ctx: VisitContext): string {
   return [
     ctx.clinician_summary ?? "",
@@ -122,6 +228,7 @@ export function buildTemplatePatientPacket(
   const ctx = args.visit_context;
   const language = languageFromInput(args);
   const target = readingTargetFromInput(args);
+  const labels = labelsFor(language);
   const newMed =
     ctx.medication_changes.find((m) => m.action === "new") ?? ctx.medication_changes[0];
   const medRows = ctx.medication_changes.map((m) => ({
@@ -132,40 +239,30 @@ export function buildTemplatePatientPacket(
       m.action === "new" && m.behavior_rule
         ? m.behavior_rule
         : m.action === "new"
-          ? "Use esta medicina solo como le indicó su equipo."
-          : "Siga tomándola igual.",
+          ? labels.newMedicationInstructions
+          : labels.continueMedicationInstructions,
     why: m.reason ?? undefined,
   }));
   const nextSteps = ctx.orders.map((o) => {
-    const timing = o.timing ? ` en ${o.timing}` : "";
+    const timing = o.timing ? `${labels.timingPrefix}${o.timing}` : "";
     return `${o.display}${timing}.`;
   });
   return {
     language,
     reading_level_target: target,
-    title: `Su plan de visita, ${ctx.patient.name}`,
+    title: `${labels.titlePrefix}, ${ctx.patient.name}`,
     sections: {
-      what_we_did_today:
-        "Hoy revisamos su corazón, sus medicinas y sus próximos estudios. Su presión y sus análisis recientes están en el plan de cuidado.",
+      what_we_did_today: labels.visitSummary,
       medications: medRows,
       watch_for: [
-        newMed
-          ? `Revise si sus tobillos se hinchan antes de usar ${newMed.name} ${newMed.dose}.`
-          : "Revise si sus síntomas cambian.",
-        "Pésese cada mañana y anote el número.",
-        "Llame si falta una medicina o no entiende una instrucción.",
+        newMed ? labels.watchBeforeUsing(newMed.name, newMed.dose) : labels.noMedicationChangeWatch,
+        labels.dailyWeight,
+        labels.medicationQuestion,
       ],
       next_steps: nextSteps,
-      when_to_call: [
-        "Llame al equipo de cardiología si sube más de 1 kg en un día.",
-        "Llame si sus tobillos se hinchan más o si se siente peor.",
-      ],
-      when_to_go_to_er: [
-        "Vaya a emergencias si le falta el aire estando sentada.",
-        "Vaya a emergencias si tiene dolor fuerte en el pecho.",
-      ],
-      citations_footer:
-        "Este resumen usa lenguaje claro y pasos de acción para pacientes [CIT-001, CIT-005, CIT-006].",
+      when_to_call: labels.whenToCall,
+      when_to_go_to_er: labels.whenToGoToEr,
+      citations_footer: labels.citationsFooter,
     },
     citations_used: citationIds.filter((id) => ["CIT-001", "CIT-005", "CIT-006"].includes(id)),
   };
@@ -212,9 +309,10 @@ function parseJsonObject(text: string): unknown {
 }
 
 function renderPacketMarkdown(packet: GeneratedPatientPacket): string {
+  const labels = labelsFor(packet.language);
   const meds = packet.sections.medications
     .map((m) => {
-      const label = m.action === "new" ? "NUEVA" : "Continuar";
+      const label = m.action === "new" ? labels.newLabel : labels.continueLabel;
       const why = m.why ? ` — ${m.why}` : "";
       const instructions = m.instructions ? ` ${m.instructions}` : "";
       return `| ${label} | ${m.name} | ${m.dose} |${why}${instructions} |`;
@@ -223,24 +321,24 @@ function renderPacketMarkdown(packet: GeneratedPatientPacket): string {
   return [
     `# ${packet.title}`,
     "",
-    "## Lo que hicimos hoy",
+    labels.whatWeDidTodayHeading,
     packet.sections.what_we_did_today,
     "",
-    "## Sus medicinas ahora",
-    "| Acción | Medicina | Dosis | Instrucciones |",
+    labels.medicationsHeading,
+    `| ${labels.actionHeader} | ${labels.medicineHeader} | ${labels.doseHeader} | ${labels.instructionsHeader} |`,
     "|---|---|---|---|",
     meds,
     "",
-    "## Qué vigilar",
+    labels.watchForHeading,
     ...packet.sections.watch_for.map((s) => `- ${s}`),
     "",
-    "## Próximos pasos",
+    labels.nextStepsHeading,
     ...packet.sections.next_steps.map((s, i) => `${i + 1}. ${s}`),
     "",
-    "## Cuándo llamarnos",
+    labels.whenToCallHeading,
     ...packet.sections.when_to_call.map((s) => `- ${s}`),
     "",
-    "## Cuándo ir a emergencias",
+    labels.whenToGoToErHeading,
     ...packet.sections.when_to_go_to_er.map((s) => `- ${s}`),
     "",
     packet.sections.citations_footer,

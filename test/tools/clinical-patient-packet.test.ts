@@ -72,6 +72,34 @@ describe("clinical_generate_patient_packet", () => {
     expect(parsed.data.readability.inflesz_score).toBeGreaterThan(0);
   });
 
+  it("honors an English packet language override in template and markdown", async () => {
+    const input = {
+      visit_context: heroVisitContext,
+      language: "en-US",
+      reading_level_target: "grade-6-en",
+      citation_ids: ["CIT-001", "CIT-005", "CIT-006"],
+    };
+    const template = buildTemplatePatientPacket(input, ["CIT-001", "CIT-005", "CIT-006"]);
+    const output = await generatePatientPacket(input, {
+      llm: {
+        async generate() {
+          return { model: "@cf/test/model", text: JSON.stringify(template) };
+        },
+      },
+      now: () => new Date("2026-05-10T00:00:00.000Z"),
+    });
+    const parsed = patientPacketOutputSchema.safeParse(output);
+    expect(parsed.success, parsed.success ? "" : JSON.stringify(parsed.error.format())).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.language).toBe("en-US");
+    expect(parsed.data.readability.target).toBe("grade-6-en");
+    expect(parsed.data.title).toMatch(/^Your visit plan/);
+    expect(parsed.data.packet_markdown).toContain("## What we did today");
+    expect(parsed.data.packet_markdown).toContain("## Your medicines now");
+    expect(parsed.data.packet_markdown).not.toContain("## Lo que hicimos hoy");
+    expect(parsed.data.packet_markdown).not.toContain("## Sus medicinas ahora");
+  });
+
   it("rejects tampered unsupported quotes and unknown doses", () => {
     const result = validateGrounding({
       visit_context: heroVisitContext,

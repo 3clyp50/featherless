@@ -72,5 +72,8 @@ export function meetsReadingTarget(scores: ReadabilityScores, target: string): b
   if (t.includes("grade-6") || t.includes("grade 6")) {
     return scores.flesch_kincaid_grade <= 6.9;
   }
-  return true;
+  console.warn(
+    `Unknown reading_level_target "${target}" parsed as [${parts.join(", ")}]; treating as unmet.`,
+  );
+  return false;
 }

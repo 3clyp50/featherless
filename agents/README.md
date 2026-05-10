@@ -8,7 +8,7 @@ This directory exists for two reasons:
 
 ## Layout
 
-```
+```text
 agents/
 ├── README.md                       (this file)
 ├── _TEMPLATE/
@@ -46,9 +46,9 @@ agents/
 For each scope output:
 
 1. `git diff <scope-branch>` — confirm only files in the scope's `Writable` list changed.
-2. `pnpm typecheck && pnpm lint && pnpm test` — must be green.
+2. `npm run typecheck && npm run lint && npm test` — must be green.
 3. Open `agents/<scope>/TODO.md` — confirm checkmarks match reality.
 4. If all three pass: merge, append to `agents/S-judge-merge/TODO.md`.
 5. If any fail: send back to the scope subagent with a one-line reason. The judge does not write feature code.
 
-After the last scope merges: `pnpm e2e` against local HAPI + hero patient. Failure escalates to the human, not back to a subagent.
+After the last scope merges: `npm run test:integration` against local HAPI + hero patient. Failure escalates to the human, not back to a subagent.

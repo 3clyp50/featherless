@@ -386,6 +386,13 @@ function schemaError(label: string, error: { message: string }): Error {
   return new Error(`mcp_contract_error:${label}:${error.message}`);
 }
 
+function toolFailure(tool: string, value: unknown): Error | null {
+  const obj = asDict(value);
+  if (!obj || typeof obj.error !== "string") return null;
+  const message = typeof obj.message === "string" ? obj.message : obj.error;
+  return new Error(`${tool}:${obj.error}:${message}`);
+}
+
 export async function runFeatherlessWorkflow(input: {
   fetcher: FetchFn;
   mcpUrl: string;
@@ -406,6 +413,8 @@ export async function runFeatherlessWorkflow(input: {
         args,
         input.timeoutMs ?? DEFAULT_MCP_CALL_TIMEOUT_MS,
       );
+      const failure = toolFailure(tool, result);
+      if (failure) throw failure;
       trace.push({ tool, started_at, ms: Math.max(1, Date.now() - start), ok: true });
       return result;
     } catch (e) {

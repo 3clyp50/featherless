@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { meetsReadingTarget, scoreReadability } from "../../src/tools/readability.ts";
 
 describe("readability metrics", () => {
@@ -17,5 +17,17 @@ describe("readability metrics", () => {
     expect(scores.word_count).toBeGreaterThan(10);
     expect(scores.inflesz_score).toBeGreaterThan(55);
     expect(meetsReadingTarget(scores, "grade-6-es")).toBe(true);
+  });
+
+  it("treats unknown reading targets as unmet", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const scores = scoreReadability("Take this pill today. Call us if you feel worse.");
+
+    expect(meetsReadingTarget(scores, "plain-language")).toBe(false);
+    expect(warn).toHaveBeenCalledWith(
+      'Unknown reading_level_target "plain-language" parsed as [plain, language]; treating as unmet.',
+    );
+
+    warn.mockRestore();
   });
 });

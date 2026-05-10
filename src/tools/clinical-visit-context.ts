@@ -217,11 +217,11 @@ function buildVitalsToday(rawVitals: Dict[], encounterDate: string): VisitContex
     }))
     .filter((w) => w.date && typeof w.kg === "number") as { date: string; kg: number }[];
   weights.sort((a, b) => b.date.localeCompare(a.date));
-  const latest = weights[0];
-  const previous = weights[1];
-  if (latest) out.weight_kg = latest.kg;
-  if (latest && previous) {
-    out.weight_change_kg = Math.round((latest.kg - previous.kg) * 10) / 10;
+  const encounterWeight = weights.find((w) => w.date === encounterDate);
+  const previous = weights.find((w) => w.date < encounterDate);
+  if (encounterWeight) out.weight_kg = encounterWeight.kg;
+  if (encounterWeight && previous) {
+    out.weight_change_kg = Math.round((encounterWeight.kg - previous.kg) * 10) / 10;
   }
   return out;
 }

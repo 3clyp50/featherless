@@ -21,6 +21,17 @@ Sources: [Devpost rules](https://agents-assemble.devpost.com/rules), [Prompt Opi
 - Care-team closure date math now tolerates missing or invalid encounter dates and still emits valid date-shaped FHIR fields.
 - Patient-packet generation remains Workers AI only. No external LLM provider keys are required or configured.
 
+## Optional Memory Re-Enable Checklist
+
+The hackathon workflow ships with `MEM0_DISABLED=1`, so `MemoryClient.fromEnv()` never requires Cloudflare Vectorize or D1. If an operator later changes `MEM0_DISABLED` to `0`, restore all memory bindings before deploy:
+
+- `ai.binding = "AI"` in `wrangler.jsonc`
+- `vectorize` binding named `MEMORY_INDEX`, usually pointing at index `featherless-memory`
+- `d1_databases` binding named `MEMORY_META` with a real `database_id`, not `REPLACE_WITH_D1_ID`
+- remote migration run through `npm run db:migrate:remote`
+
+Without `MEMORY_INDEX` and `MEMORY_META`, `MemoryClient.fromEnv()` intentionally returns `null` and the memory tools do not register.
+
 ## Missing Before Marketplace Publish
 
 1. Authenticate Cloudflare locally:

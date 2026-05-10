@@ -84,6 +84,10 @@ function responseForTool(tool: string): unknown {
 }
 
 function mockMcpFetcher(calls: CapturedMcpCall[]) {
+  return mockMcpFetcherWithResponses(calls, {});
+}
+
+function mockMcpFetcherWithResponses(calls: CapturedMcpCall[], responses: Record<string, unknown>) {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const headers = new Headers(init?.headers);
     const body = JSON.parse(String(init?.body ?? "{}")) as {
@@ -101,10 +105,13 @@ function mockMcpFetcher(calls: CapturedMcpCall[]) {
       },
       arguments: body.params?.arguments,
     });
+    const structuredContent = Object.hasOwn(responses, tool)
+      ? responses[tool]
+      : responseForTool(tool);
     return Response.json({
       jsonrpc: "2.0",
       id: body.id ?? tool,
-      result: { structuredContent: responseForTool(tool) },
+      result: { structuredContent },
     });
   };
 }
@@ -249,6 +256,54 @@ describe("Featherless A2A orchestrator", () => {
     expect(envelope.trace.map((h) => h.tool)).toEqual(calls.map((c) => c.tool));
     expect(envelope.trace.every((h) => h.ok && h.ms > 0)).toBe(true);
     expect(envelope.errors).toEqual([]);
+  });
+
+  it("propagates clinical tool error envelopes without contract wrapping", async () => {
+    const calls: CapturedMcpCall[] = [];
+    const handler = createOrchestratorHandler({
+      fetcher: mockMcpFetcherWithResponses(calls, {
+        clinical_generate_patient_packet: {
+          error: "llm_config_required",
+          message: "bind Workers AI as AI",
+        },
+      }),
+    });
+    const res = await handler.fetch(
+      new Request("https://agent.example/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "run-tool-error",
+          method: "message/send",
+          params: {
+            message: {
+              role: "user",
+              parts: [{ kind: "text", text: "Generate the visit packet." }],
+              metadata: {
+                [DEFAULT_FHIR_EXTENSION_URI]: {
+                  fhirUrl: "https://synthetic-fhir.example/r4",
+                  fhirToken: "tool-error-token",
+                  patientId: heroVisitContext.patient.id,
+                },
+              },
+            },
+          },
+        }),
+      }),
+      { FEATHERLESS_MCP_URL: "https://featherless.example/mcp" },
+      {} as ExecutionContext,
+    );
+
+    const rpc = (await res.json()) as { error: { code: number; message: string } };
+    expect(calls.map((c) => c.tool)).toEqual([
+      "clinical_pack_visit_context",
+      "clinical_generate_patient_packet",
+    ]);
+    expect(rpc.error.code).toBe(-32000);
+    expect(rpc.error.message).toContain("clinical_generate_patient_packet:llm_config_required");
+    expect(rpc.error.message).not.toContain("mcp_contract_error");
+    expect(rpc.error.message).not.toContain("tool-error-token");
   });
 
   it("routes MCP calls through the Cloudflare service binding when configured", async () => {
