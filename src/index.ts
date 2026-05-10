@@ -12,7 +12,11 @@ import { hasFhir, parseSharpHeaders, runWithContext } from "./context.ts";
 import type { Env } from "./env.ts";
 import { SERVER_NAME, SERVER_VERSION, buildServer } from "./server.ts";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+import {
+  isJSONRPCNotification,
+  isJSONRPCRequest,
+  type JSONRPCMessage,
+} from "@modelcontextprotocol/sdk/types.js";
 
 export type { Env };
 
@@ -39,26 +43,46 @@ class StreamableHttpBridge {
   async handleRequest(request: Request): Promise<Response> {
     // Wire up message handling before processing the request
     this.transport.onmessage = async (message: JSONRPCMessage) => {
-      // Strict mode: reject tools/call without FHIR context
-      if (this.strict) {
-        const msg = message as { method?: string; id?: string | number | null };
-        if (msg.method === "tools/call" && !hasFhir(this.ctx)) {
-          await this.transport.send({
-            jsonrpc: "2.0",
-            id: msg.id ?? null,
-            error: {
-              code: -32001,
-              message:
-                "fhir_context_required: send X-FHIR-Server-URL and X-FHIR-Access-Token headers per SHARP-on-MCP §3.2.",
-            },
-          } as JSONRPCMessage);
+      // Only requests and notifications come from the client; ignore anything else.
+      if (!isJSONRPCRequest(message) && !isJSONRPCNotification(message)) return;
+
+      try {
+        // Strict mode: reject tools/call without FHIR context
+        if (this.strict && message.method === "tools/call" && !hasFhir(this.ctx)) {
+          if (isJSONRPCRequest(message)) {
+            await this.transport.send({
+              jsonrpc: "2.0",
+              id: message.id,
+              error: {
+                code: -32001,
+                message:
+                  "fhir_context_required: send X-FHIR-Server-URL and X-FHIR-Access-Token headers per SHARP-on-MCP §3.2.",
+              },
+            });
+          }
           return;
         }
-      }
 
-      const response = await this.mcpServer.handleRequest(message as never);
-      if (response !== null) {
-        await this.transport.send(response as JSONRPCMessage);
+        const response = await this.mcpServer.handleRequest(message);
+        if (response !== null) {
+          await this.transport.send(response as JSONRPCMessage);
+        }
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        this.transport.onerror?.(error);
+        if (isJSONRPCRequest(message)) {
+          try {
+            await this.transport.send({
+              jsonrpc: "2.0",
+              id: message.id,
+              error: { code: -32603, message: error.message },
+            });
+          } catch (sendErr) {
+            this.transport.onerror?.(
+              sendErr instanceof Error ? sendErr : new Error(String(sendErr)),
+            );
+          }
+        }
       }
     };
 

@@ -27,7 +27,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "jose": "^5.9.6",
     "ulid": "^2.3.0",
-    "zod": "^3.25.76"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
