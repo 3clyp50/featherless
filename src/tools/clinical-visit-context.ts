@@ -1,5 +1,5 @@
 import { type FHIRBundle, FHIRError } from "../clients/fhir-client.ts";
-import { bundleToResources, codingText } from "../fhir-utils.ts";
+import { bundleToResources, codingText, encounterSummary } from "../fhir-utils.ts";
 /**
  * Visit-scoped clinical context packer — `clinical_pack_visit_context`.
  *
@@ -118,6 +118,29 @@ function encounterLookbackLabel(days: number): string {
     return `${years} year${years === 1 ? "" : "s"}`;
   }
   return `${days} day${days === 1 ? "" : "s"}`;
+}
+
+function encounterBelongsToPatient(rawEncounter: Dict, patientId: string): boolean {
+  const ref = asObj(rawEncounter.subject).reference;
+  if (typeof ref !== "string" || !ref) return false;
+  return (
+    ref === patientId || ref === `Patient/${patientId}` || ref.endsWith(`/Patient/${patientId}`)
+  );
+}
+
+async function readEncounterForPatient(
+  fhir: ReturnType<typeof fhirClientForCurrentContext>,
+  patientId: string,
+  encounterId: string,
+): Promise<{ summary: Dict; rawEncounter: Dict } | null> {
+  try {
+    const rawEncounter = await fhir.getResource("Encounter", encounterId);
+    if (!encounterBelongsToPatient(rawEncounter, patientId)) return null;
+    return { summary: encounterSummary(rawEncounter), rawEncounter };
+  } catch (e) {
+    if (e instanceof FHIRError) return null;
+    throw e;
+  }
 }
 
 function encounterTypeSlug(rawEncounter: Dict, summaryType: string | null): string | null {
@@ -485,7 +508,8 @@ async function packVisitContext(args: VisitContextInput): Promise<VisitContext |
   // Pick encounter via summary (id + start), then refetch raw for participant + canonical type.
   let encounterLookbackDays = VISIT_CONTEXT_RECENT_ENCOUNTER_LOOKBACK_DAYS;
   let encSummary = pickEncounter(aggregate.recent_encounters, args.encounter_id);
-  if (!encSummary && !args.encounter_id) {
+  let rawEncounter: Dict = {};
+  if (!encSummary) {
     const fallbackAggregateResult = await aggregateVisitClinicalContext(
       pid,
       VISIT_CONTEXT_FALLBACK_ENCOUNTER_LOOKBACK_DAYS,
@@ -498,10 +522,18 @@ async function packVisitContext(args: VisitContextInput): Promise<VisitContext |
       return fallbackAggregateResult as Dict;
     }
     const fallbackAggregate = fallbackAggregateResult as ClinicalContextAggregate;
-    const fallbackEncounter = pickEncounter(fallbackAggregate.recent_encounters, undefined);
+    const fallbackEncounter = pickEncounter(fallbackAggregate.recent_encounters, args.encounter_id);
     if (fallbackEncounter) {
       aggregate = fallbackAggregate;
       encSummary = fallbackEncounter;
+      encounterLookbackDays = VISIT_CONTEXT_FALLBACK_ENCOUNTER_LOOKBACK_DAYS;
+    }
+  }
+  if (!encSummary && args.encounter_id) {
+    const explicitEncounter = await readEncounterForPatient(fhir, pid, args.encounter_id);
+    if (explicitEncounter) {
+      encSummary = explicitEncounter.summary;
+      rawEncounter = explicitEncounter.rawEncounter;
       encounterLookbackDays = VISIT_CONTEXT_FALLBACK_ENCOUNTER_LOOKBACK_DAYS;
     }
   }
@@ -519,12 +551,13 @@ async function packVisitContext(args: VisitContextInput): Promise<VisitContext |
   }
   const rawResources = aggregate.raw_resources;
   const encounterId = encSummary.id as string;
-  let rawEncounter: Dict = {};
-  try {
-    rawEncounter = await fhir.getResource("Encounter", encounterId);
-  } catch (e) {
-    if (!(e instanceof FHIRError)) throw e;
-    // Continue with summary-only data.
+  if (!Object.keys(rawEncounter).length) {
+    try {
+      rawEncounter = await fhir.getResource("Encounter", encounterId);
+    } catch (e) {
+      if (!(e instanceof FHIRError)) throw e;
+      // Continue with summary-only data.
+    }
   }
 
   const encounterStartIso = (encSummary.start as string | null) ?? null;

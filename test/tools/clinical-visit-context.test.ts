@@ -238,6 +238,47 @@ describe("clinical_pack_visit_context", () => {
     expect(ctx.encounter.provider).toBe("Dr. Ada North");
   }, 30_000);
 
+  it("honors an older explicit encounter_id without first returning no_encounter_found", async () => {
+    const { seeded, encounterDate } = await seedOldEncounterFixture();
+    if (!seeded) {
+      console.warn(
+        `local HAPI not reachable or not writable at ${HAPI_LOCAL} — skipping explicit older-encounter test.`,
+      );
+      return;
+    }
+
+    const r = await rpc(
+      "tools/call",
+      {
+        name: "clinical_pack_visit_context",
+        arguments: { encounter_id: OLD_VISIT_ENCOUNTER },
+      },
+      { ...sharpHeaders, "X-Patient-ID": OLD_VISIT_PATIENT },
+    );
+    const probe = (r.result as { structuredContent?: unknown }).structuredContent;
+    if (looksLikeUnreachableUpstream(probe)) {
+      console.warn(
+        `local HAPI not reachable at ${HAPI_LOCAL}/Patient/${OLD_VISIT_PATIENT} — skipping.`,
+      );
+      return;
+    }
+    expect(r.error, JSON.stringify(r.error)).toBeUndefined();
+
+    const result = r.result as {
+      structuredContent?: unknown;
+      content?: { text?: string }[];
+    };
+    const parsed = visitContextOutputSchema.safeParse(result.structuredContent);
+    expect(parsed.success, parsed.success ? "" : JSON.stringify(parsed.error.format())).toBe(true);
+    if (!parsed.success) return;
+
+    const ctx = parsed.data;
+    expect(ctx.patient.id).toBe(OLD_VISIT_PATIENT);
+    expect(ctx.encounter.id).toBe(OLD_VISIT_ENCOUNTER);
+    expect(ctx.encounter.date).toBe(encounterDate);
+    expect(ctx.encounter.provider).toBe("Dr. Ada North");
+  }, 30_000);
+
   it("returns fhir_context_required envelope when SHARP headers are absent", async () => {
     const r = await rpc("tools/call", {
       name: "clinical_pack_visit_context",
