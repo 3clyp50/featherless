@@ -40,11 +40,16 @@ npm run deploy:orchestrator
 
 1. Open Prompt Opinion.
 2. Go to `Configuration` -> `MCP Servers`.
-3. Add the Featherless MCP URL: `https://featherless-mcp.inf3ctious007.workers.dev/mcp`.
-4. Continue through the handshake.
-5. Confirm the server name is `featherless`.
-6. Confirm the FHIR context extension appears: `ai.promptopinion/fhir-context`.
-7. Accept the requested patient scopes for synthetic demo data.
+3. Add the server with:
+   - Friendly name: `Featherless`
+   - Endpoint: `https://featherless-mcp.inf3ctious007.workers.dev/mcp`
+   - Transport type: `Streamable HTTP`
+   - Authentication type: `No Authentication (Open)`
+4. Do not enter a Cloudflare API key. Cloudflare credentials are only for deploying Workers; Prompt Opinion patient access is authorized through the FHIR-context extension and sent as SHARP headers on tool calls.
+5. Continue through the handshake.
+6. Confirm the server name is `featherless`.
+7. Confirm the FHIR context extension appears: `ai.promptopinion/fhir-context`.
+8. Accept the requested patient scopes for synthetic demo data.
 
 Expected result: Prompt Opinion can list MCP tools including:
 
