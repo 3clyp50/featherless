@@ -14,7 +14,7 @@ Sources: [Devpost rules](https://agents-assemble.devpost.com/rules), [Prompt Opi
 
 ## Submission Fixes Already Landed
 
-- The orchestrator no longer has a production localhost MCP default. It now uses the Cloudflare service binding `FEATHERLESS_MCP` by default, or an explicitly configured HTTPS `FEATHERLESS_MCP_URL`.
+- The orchestrator no longer has a production localhost MCP default. It now uses the Cloudflare service binding `FEATHERLESS_MCP` by default, bound to the deployed MCP Worker service `featherless-mcp`. An explicitly configured HTTPS `FEATHERLESS_MCP_URL` is only a fallback for deployments that cannot use Cloudflare service bindings.
 - The orchestrator fails fast if a public request tries to use a loopback MCP URL or if no MCP target is configured.
 - The default MCP Worker deploy no longer carries placeholder D1/Vectorize bindings. Optional memory is disabled by default with `MEM0_DISABLED=1`, so Cloudflare deploy is not blocked by `REPLACE_WITH_D1_ID`.
 - The visit-context packer reuses raw resources fetched by `aggregateClinicalContext()` instead of refetching Patient, MedicationRequest, Condition, vitals, and labs.
@@ -47,7 +47,7 @@ Without `MEMORY_INDEX` and `MEMORY_META`, `MemoryClient.fromEnv()` intentionally
    npm run deploy
    ```
 
-   Expected public endpoint: `<featherless-worker-url>/mcp`.
+   Confirmed public endpoint: `https://featherless-mcp.inf3ctious007.workers.dev/mcp`.
 
 3. Deploy the orchestrator Worker second:
 
@@ -57,7 +57,7 @@ Without `MEMORY_INDEX` and `MEMORY_META`, `MemoryClient.fromEnv()` intentionally
 
    Expected public AgentCard: `<orchestrator-worker-url>/.well-known/agent-card.json`.
 
-4. Confirm the deployed orchestrator can reach the deployed MCP Worker. The preferred path is the Cloudflare service binding in `wrangler-orchestrator.jsonc`. If using a different Cloudflare account or deployment shape, set `FEATHERLESS_MCP_URL` to the deployed HTTPS MCP URL; never use `localhost` or `127.0.0.1` for judging.
+4. Confirm the deployed orchestrator can reach the deployed MCP Worker through the Cloudflare service binding in `wrangler-orchestrator.jsonc`: `FEATHERLESS_MCP -> featherless-mcp`. This is preferred over `FEATHERLESS_MCP_URL` because the call stays Worker-to-Worker inside Cloudflare. If using a different Cloudflare account or deployment shape where service binding is impossible, set `FEATHERLESS_MCP_URL=https://featherless-mcp.inf3ctious007.workers.dev/mcp`; never use `localhost` or `127.0.0.1` for judging.
 
 5. Use a synthetic FHIR server reachable from Cloudflare Workers and Prompt Opinion. Local HAPI at `127.0.0.1:8080` is valid for tests only. For judging, either use Prompt Opinion's workspace FHIR context if it supports loading the synthetic patient, or expose a no-PHI HAPI instance over HTTPS and load the hero bundle:
 

@@ -159,7 +159,7 @@ Submission URLs:
 - MCP: `<featherless-worker-url>/mcp`
 - A2A AgentCard: `<orchestrator-worker-url>/.well-known/agent-card.json`
 
-The deployed orchestrator uses a Cloudflare service binding named `FEATHERLESS_MCP` to call the deployed MCP Worker. If a different deployment shape cannot use that binding, set `FEATHERLESS_MCP_URL` to the deployed HTTPS MCP endpoint; public loopback targets are rejected.
+The deployed orchestrator uses a Cloudflare service binding named `FEATHERLESS_MCP` to call the deployed MCP Worker service `featherless-mcp`. If a different deployment shape cannot use that binding, set `FEATHERLESS_MCP_URL` to the deployed HTTPS MCP endpoint; public loopback targets are rejected.
 
 No `marketplace.yaml` is used for the current Prompt Opinion onboarding path.
 

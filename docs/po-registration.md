@@ -6,7 +6,7 @@ This guide is for judges and teammates registering Featherless in a fresh Prompt
 
 | Surface | URL |
 |---|---|
-| Featherless MCP server | `<featherless-worker-url>/mcp` |
+| Featherless MCP server | `https://featherless-mcp.inf3ctious007.workers.dev/mcp` |
 | Featherless A2A orchestrator AgentCard | `<orchestrator-worker-url>/.well-known/agent-card.json` |
 
 Use deployed HTTPS URLs for final judging. Localhost URLs are useful only for development.
@@ -26,8 +26,8 @@ On 2026-05-10, both dry-runs built successfully in this workspace, but `wrangler
 The deployable path is now:
 
 - MCP Worker: `wrangler.jsonc` binds Workers AI and disables optional memory by default with `MEM0_DISABLED=1`; no D1/Vectorize resource is required for the hackathon workflow.
-- A2A orchestrator: `wrangler-orchestrator.jsonc` binds the MCP Worker as `FEATHERLESS_MCP`. This avoids a public `localhost` target and keeps Worker-to-Worker calls inside Cloudflare.
-- Fallback only: if the orchestrator is deployed somewhere that cannot use the service binding, configure `FEATHERLESS_MCP_URL` to the deployed HTTPS MCP endpoint. A loopback URL is rejected for public requests.
+- A2A orchestrator: `wrangler-orchestrator.jsonc` binds the deployed MCP Worker service `featherless-mcp` as `FEATHERLESS_MCP`. This avoids a public `localhost` target and keeps Worker-to-Worker calls inside Cloudflare.
+- Fallback only: if the orchestrator is deployed somewhere that cannot use the service binding, configure `FEATHERLESS_MCP_URL=https://featherless-mcp.inf3ctious007.workers.dev/mcp`. A loopback URL is rejected for public requests.
 
 Deploy commands:
 
@@ -40,7 +40,7 @@ npm run deploy:orchestrator
 
 1. Open Prompt Opinion.
 2. Go to `Configuration` -> `MCP Servers`.
-3. Add the Featherless MCP URL: `<featherless-worker-url>/mcp`.
+3. Add the Featherless MCP URL: `https://featherless-mcp.inf3ctious007.workers.dev/mcp`.
 4. Continue through the handshake.
 5. Confirm the server name is `featherless`.
 6. Confirm the FHIR context extension appears: `ai.promptopinion/fhir-context`.
@@ -109,5 +109,5 @@ Save final screenshots here:
 |---|---|---|
 | `fhir_context_required` | Prompt Opinion did not send FHIR metadata or SHARP headers. | Re-open the registration flow and accept the FHIR context extension. |
 | `llm_config_required` | Featherless Worker does not have the Workers AI binding. | Verify `ai.binding = "AI"` and `LLM_MODEL` in `wrangler.jsonc`. |
-| `mcp_timeout:<tool>` | Orchestrator could not reach the MCP Worker in time. | Check `FEATHERLESS_MCP_URL` and increase `MCP_CALL_TIMEOUT_MS` only if the service is healthy. |
+| `mcp_timeout:<tool>` | Orchestrator could not reach the MCP Worker in time. | First verify the `FEATHERLESS_MCP -> featherless-mcp` service binding. Use `FEATHERLESS_MCP_URL` only if service binding is impossible; increase `MCP_CALL_TIMEOUT_MS` only if the service is healthy. |
 | Empty closure write results | Default dry-run mode is active. | This is expected unless caller sets `write_back: true` and `WRITE_BACK=1`. |

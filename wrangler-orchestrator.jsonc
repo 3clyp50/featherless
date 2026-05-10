@@ -7,7 +7,7 @@
   "services": [
     {
       "binding": "FEATHERLESS_MCP",
-      "service": "featherless"
+      "service": "featherless-mcp"
     }
   ],
   "vars": {
