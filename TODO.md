@@ -60,8 +60,8 @@ These are pass/fail. If any one is red at submit time, we don't get judged.
 - [x] ~~**04:15** [`S-tool2-patient-packet`] Build **`src/tools/clinical-patient-packet.ts`**~~ **DONE** — `clinical_generate_patient_packet` uses Workers AI via the Worker `AI` binding, returns packet markdown + structured content, and avoids external LLM provider keys.
 - [x] ~~**05:30** [`S-tool2-patient-packet`] Reading-level metrics inline~~ **DONE** — `src/tools/readability.ts` reports Flesch-Kincaid and INFLESZ; unit tests cover English and Spanish targets.
 - [x] ~~**06:00** [`S-tool2-patient-packet`] Citation-grounding validator~~ **DONE** — validator checks allowed citations, unsupported quoted phrases, and unknown dose strings; tests cover passing packet generation and tampered rejection.
-- [ ] **06:30** [`S-tool3-care-team-closure`] Build **`src/tools/clinical-care-team-closure.ts`** — emits 3 `Task` + 1 `CommunicationRequest` + 1 `DocumentReference` from visit context. R4-validate via the FHIR `$validate` operation against local HAPI. `WRITE_BACK=1` env flag PUTs them; default off. Registered tool: `clinical_prepare_care_team_closure`.
-- [ ] **07:30** [`S-tool3-care-team-closure`] Vitest unit tests for tool 3. Validate JSON shape, statuses, `intent`, and `for.reference` chaining to the patient.
+- [x] ~~**06:30** [`S-tool3-care-team-closure`] Build **`src/tools/clinical-care-team-closure.ts`**~~ **DONE** — emits 3 `Task` + 1 `CommunicationRequest` + 1 `DocumentReference` from visit context; R4-validates via FHIR `$validate`; `WRITE_BACK=1` is required for caller-requested PUT write-back and defaults off. Registered tool: `clinical_prepare_care_team_closure`.
+- [x] ~~**07:30** [`S-tool3-care-team-closure`] Vitest unit tests for tool 3~~ **DONE** — validates JSON shape, statuses, `intent`, `for.reference` chaining, local HAPI validation, and missing-SHARP-header handling.
 - [ ] **07:45** [judge] Merge S-tool2 + S-tool3; run typecheck + lint + tests; tag `d5-tools-green`.
 
 ### Block 3 · Evening (4h) — orchestrator + e2e + PO publish + README
@@ -136,7 +136,7 @@ If any of these is red → record an *insurance* rough-cut video tonight even if
 - [ ] **Citation-or-cut.** Any clinical claim, anywhere, must trace to `CITATIONS.md`. No grounding → cut.
 - [ ] **No token storage, ever.** Both Workers log per-request; persist nothing. Verify by reading the source before deploy.
 - [ ] **Synthetic data only.** Local HAPI + hand-crafted bundle. No HAPI public sandbox in the demo path.
-- [ ] **Human-in-the-loop on send.** `CommunicationRequest.status = "proposed"`, never `"active"`.
+- [ ] **Human-in-the-loop on send.** `CommunicationRequest.status = "draft"` with `intent = "proposal"`, never `"active"`.
 - [ ] **Build like deadline is D6 14:00.** The 4 hours after that are submission, not building.
 - [ ] **No new dependencies after D5 EOD.** Period.
 

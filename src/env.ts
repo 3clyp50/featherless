@@ -12,6 +12,7 @@ export interface Env {
   FEATHERLESS_DEV_MODE?: string; // "1" enables env-var fallback in context.ts
   MEM0_DISABLED?: string; // "1" disables memory tool registration
   LLM_MODEL?: string;
+  WRITE_BACK?: string; // "1" allows selected tools to PUT generated FHIR resources
 
   // Dev-only fallback FHIR context (only consulted when FEATHERLESS_DEV_MODE=1)
   FHIR_SERVER_URL?: string;

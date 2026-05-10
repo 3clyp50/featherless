@@ -11,6 +11,7 @@ import type { Env } from "./env.ts";
  * scope advertisement, mirroring `sharp-fhir-mcp`.
  */
 import { McpServer } from "./mcp/server.ts";
+import { registerClinicalCareTeamClosureTools } from "./tools/clinical-care-team-closure.ts";
 import { registerClinicalContextTools } from "./tools/clinical-context.ts";
 import { registerClinicalPatientPacketTools } from "./tools/clinical-patient-packet.ts";
 import { registerClinicalVisitContextTools } from "./tools/clinical-visit-context.ts";
@@ -69,6 +70,7 @@ export function buildServer(env: Env): McpServer {
   registerVisualizationTools(server);
   registerClinicalVisitContextTools(server);
   registerClinicalPatientPacketTools(server, env);
+  registerClinicalCareTeamClosureTools(server, env);
 
   const memory = MemoryClient.fromEnv(env);
   registerMemoryTools(server, memory);
