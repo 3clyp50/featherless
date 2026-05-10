@@ -25,6 +25,8 @@ import {
 type Dict = Record<string, unknown>;
 
 const MS_PER_DAY = 86_400_000;
+const VISIT_CONTEXT_RECENT_ENCOUNTER_LOOKBACK_DAYS = 90;
+const VISIT_CONTEXT_FALLBACK_ENCOUNTER_LOOKBACK_DAYS = 3650;
 
 function dateOnly(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -94,6 +96,28 @@ function pickEncounter(encounters: Dict[], encounterId: string | undefined): Dic
     return sb.localeCompare(sa);
   });
   return sorted[0] ?? null;
+}
+
+function aggregateVisitClinicalContext(
+  patientId: string,
+  encounterLookbackDays: number,
+): ReturnType<typeof aggregateClinicalContext> {
+  return aggregateClinicalContext({
+    patient_id: patientId,
+    lab_lookback_days: 365,
+    vitals_lookback_days: 365,
+    encounter_lookback_days: encounterLookbackDays,
+    include_alerts: false,
+    include_raw_resources: true,
+  });
+}
+
+function encounterLookbackLabel(days: number): string {
+  if (days >= 365) {
+    const years = Math.floor(days / 365);
+    return `${years} year${years === 1 ? "" : "s"}`;
+  }
+  return `${days} day${days === 1 ? "" : "s"}`;
 }
 
 function encounterTypeSlug(rawEncounter: Dict, summaryType: string | null): string | null {
@@ -447,14 +471,7 @@ async function packVisitContext(args: VisitContextInput): Promise<VisitContext |
 
   const [aggregateResult, serviceRequestBundle, appointmentBundle, documentBundle] =
     await Promise.all([
-      aggregateClinicalContext({
-        patient_id: pid,
-        lab_lookback_days: 365,
-        vitals_lookback_days: 365,
-        encounter_lookback_days: 90,
-        include_alerts: false,
-        include_raw_resources: true,
-      }),
+      aggregateVisitClinicalContext(pid, VISIT_CONTEXT_RECENT_ENCOUNTER_LOOKBACK_DAYS),
       optionalClinicalBundle(() => fhir.search("ServiceRequest", { patient: pid, _count: 50 })),
       optionalClinicalBundle(() => fhir.getAppointments(pid, { count: 25 })),
       optionalClinicalBundle(() => fhir.getDocumentReferences(pid, { count: 25 })),
@@ -463,19 +480,44 @@ async function packVisitContext(args: VisitContextInput): Promise<VisitContext |
   if (aggregateResult && typeof aggregateResult === "object" && "error" in aggregateResult) {
     return aggregateResult as Dict;
   }
-  const aggregate = aggregateResult as ClinicalContextAggregate;
-  const rawResources = aggregate.raw_resources;
+  let aggregate = aggregateResult as ClinicalContextAggregate;
 
   // Pick encounter via summary (id + start), then refetch raw for participant + canonical type.
-  const encSummary = pickEncounter(aggregate.recent_encounters, args.encounter_id);
+  let encounterLookbackDays = VISIT_CONTEXT_RECENT_ENCOUNTER_LOOKBACK_DAYS;
+  let encSummary = pickEncounter(aggregate.recent_encounters, args.encounter_id);
+  if (!encSummary && !args.encounter_id) {
+    const fallbackAggregateResult = await aggregateVisitClinicalContext(
+      pid,
+      VISIT_CONTEXT_FALLBACK_ENCOUNTER_LOOKBACK_DAYS,
+    );
+    if (
+      fallbackAggregateResult &&
+      typeof fallbackAggregateResult === "object" &&
+      "error" in fallbackAggregateResult
+    ) {
+      return fallbackAggregateResult as Dict;
+    }
+    const fallbackAggregate = fallbackAggregateResult as ClinicalContextAggregate;
+    const fallbackEncounter = pickEncounter(fallbackAggregate.recent_encounters, undefined);
+    if (fallbackEncounter) {
+      aggregate = fallbackAggregate;
+      encSummary = fallbackEncounter;
+      encounterLookbackDays = VISIT_CONTEXT_FALLBACK_ENCOUNTER_LOOKBACK_DAYS;
+    }
+  }
   if (!encSummary) {
+    const message = args.encounter_id
+      ? "No encounter found for this patient with the requested `encounter_id`. Check the encounter ID or load encounter data."
+      : `No encounter found for this patient after searching the last ${encounterLookbackLabel(
+          encounterLookbackDays,
+        )}. Pass \`encounter_id\` explicitly or load encounter data.`;
     return {
       error: "no_encounter_found",
-      message:
-        "No encounter found for this patient in the last 90 days. Pass `encounter_id` explicitly or load encounter data.",
+      message,
       patient_id: pid,
     };
   }
+  const rawResources = aggregate.raw_resources;
   const encounterId = encSummary.id as string;
   let rawEncounter: Dict = {};
   try {

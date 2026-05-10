@@ -15,6 +15,9 @@ import { visitContextOutputSchema } from "../../src/tools/schemas/visit-context.
 const HAPI_LOCAL = "http://127.0.0.1:8080/fhir";
 const HERO_PATIENT = "hapi-garcia-maria";
 const HERO_ENCOUNTER = "enc-2026-05-05-cardiology-fu";
+const OLD_VISIT_PATIENT = "hapi-old-visit-fallback";
+const OLD_VISIT_ENCOUNTER = "enc-old-visit-fallback";
+const DAY_MS = 86_400_000;
 
 interface JsonRpcResponse {
   jsonrpc: "2.0";
@@ -47,6 +50,68 @@ const sharpHeaders = {
   "X-FHIR-Access-Token": "anonymous",
   "X-Patient-ID": HERO_PATIENT,
 };
+
+function daysAgoDateOnly(days: number): string {
+  return new Date(Date.now() - days * DAY_MS).toISOString().slice(0, 10);
+}
+
+async function putFhirFixture(
+  resourceType: string,
+  id: string,
+  resource: unknown,
+): Promise<boolean> {
+  const res = await fetch(`${HAPI_LOCAL}/${resourceType}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/fhir+json" },
+    body: JSON.stringify(resource),
+  });
+  return res.ok;
+}
+
+async function seedOldEncounterFixture(): Promise<{ seeded: boolean; encounterDate: string }> {
+  const encounterDate = daysAgoDateOnly(180);
+  try {
+    const probe = await fetch(`${HAPI_LOCAL}/metadata`);
+    if (!probe.ok) return { seeded: false, encounterDate };
+
+    const patient = {
+      resourceType: "Patient",
+      id: OLD_VISIT_PATIENT,
+      name: [{ family: "Fallback", given: ["Nora"] }],
+      birthDate: "1980-01-01",
+      communication: [
+        {
+          language: {
+            coding: [{ system: "urn:ietf:bcp:47", code: "en-US", display: "English" }],
+            text: "English",
+          },
+          preferred: true,
+        },
+      ],
+    };
+    const encounter = {
+      resourceType: "Encounter",
+      id: OLD_VISIT_ENCOUNTER,
+      status: "finished",
+      class: {
+        system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+        code: "AMB",
+        display: "ambulatory",
+      },
+      type: [{ text: "Primary care follow-up" }],
+      subject: { reference: `Patient/${OLD_VISIT_PATIENT}` },
+      participant: [{ individual: { display: "Dr. Ada North" } }],
+      period: { start: `${encounterDate}T09:00:00Z` },
+      reasonCode: [{ text: "Follow-up visit" }],
+    };
+
+    const patientOk = await putFhirFixture("Patient", OLD_VISIT_PATIENT, patient);
+    const encounterOk = await putFhirFixture("Encounter", OLD_VISIT_ENCOUNTER, encounter);
+    return { seeded: patientOk && encounterOk, encounterDate };
+  } catch {
+    return { seeded: false, encounterDate };
+  }
+}
 
 function looksLikeUnreachableUpstream(structured: unknown): boolean {
   if (!structured || typeof structured !== "object") return false;
@@ -131,6 +196,46 @@ describe("clinical_pack_visit_context", () => {
     // Clinician summary — base64-decoded from DocumentReference.
     expect(ctx.clinician_summary, "expected note text").toBeDefined();
     expect(ctx.clinician_summary ?? "").toMatch(/HFrEF|metoprolol|furosemide/i);
+  }, 30_000);
+
+  it("falls back to older encounters when no recent encounter is available", async () => {
+    const { seeded, encounterDate } = await seedOldEncounterFixture();
+    if (!seeded) {
+      console.warn(
+        `local HAPI not reachable or not writable at ${HAPI_LOCAL} — skipping older-encounter fallback test.`,
+      );
+      return;
+    }
+
+    const r = await rpc(
+      "tools/call",
+      { name: "clinical_pack_visit_context", arguments: {} },
+      { ...sharpHeaders, "X-Patient-ID": OLD_VISIT_PATIENT },
+    );
+    const probe = (r.result as { structuredContent?: unknown }).structuredContent;
+    if (looksLikeUnreachableUpstream(probe)) {
+      console.warn(
+        `local HAPI not reachable at ${HAPI_LOCAL}/Patient/${OLD_VISIT_PATIENT} — skipping.`,
+      );
+      return;
+    }
+    expect(r.error, JSON.stringify(r.error)).toBeUndefined();
+
+    const result = r.result as {
+      structuredContent?: unknown;
+      content?: { text?: string }[];
+    };
+    const parsed = visitContextOutputSchema.safeParse(result.structuredContent);
+    expect(parsed.success, parsed.success ? "" : JSON.stringify(parsed.error.format())).toBe(true);
+    if (!parsed.success) return;
+
+    const ctx = parsed.data;
+    expect(ctx.patient.id).toBe(OLD_VISIT_PATIENT);
+    expect(ctx.patient.name).toMatch(/Fallback/i);
+    expect(ctx.patient.reading_level_target).toBe("grade-6-en");
+    expect(ctx.encounter.id).toBe(OLD_VISIT_ENCOUNTER);
+    expect(ctx.encounter.date).toBe(encounterDate);
+    expect(ctx.encounter.provider).toBe("Dr. Ada North");
   }, 30_000);
 
   it("returns fhir_context_required envelope when SHARP headers are absent", async () => {
