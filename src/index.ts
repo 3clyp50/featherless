@@ -38,6 +38,9 @@ class StreamableHttpBridge {
     this.transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined, // stateless — no session persistence
     });
+    this.transport.onerror = (err) => {
+      console.error("[mcp.transport] error", err);
+    };
   }
 
   async handleRequest(request: Request): Promise<Response> {
