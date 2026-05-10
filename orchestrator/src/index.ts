@@ -186,6 +186,13 @@ export function agentCardFor(request: Request, env: OrchestratorEnv): Dict {
     version: "1.0.0",
     protocolVersion: "0.3.0",
     preferredTransport: "JSONRPC",
+    supportedInterfaces: [
+      {
+        url: base,
+        protocolBinding: "JSONRPC",
+        protocolVersion: "0.3.0",
+      },
+    ],
     defaultInputModes: ["text/plain"],
     defaultOutputModes: ["text/plain"],
     capabilities: {

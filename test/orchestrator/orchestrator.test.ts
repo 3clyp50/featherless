@@ -147,6 +147,7 @@ describe("Featherless A2A orchestrator", () => {
       url: string;
       protocolVersion: string;
       preferredTransport: string;
+      supportedInterfaces: { url: string; protocolBinding: string; protocolVersion: string }[];
       capabilities: { extensions: { uri: string; required: boolean }[] };
       securitySchemes?: Record<string, unknown>;
       skills: { id: string; name: string }[];
@@ -156,6 +157,13 @@ describe("Featherless A2A orchestrator", () => {
     expect(card.url).toBe("https://featherless.example");
     expect(card.protocolVersion).toBe("0.3.0");
     expect(card.preferredTransport).toBe("JSONRPC");
+    expect(card.supportedInterfaces).toEqual([
+      {
+        url: "https://featherless.example",
+        protocolBinding: "JSONRPC",
+        protocolVersion: "0.3.0",
+      },
+    ]);
     expect(card.capabilities.extensions[0]?.uri).toBe(DEFAULT_FHIR_EXTENSION_URI);
     expect(card.capabilities.extensions[0]?.required).toBe(false);
     expect(card.securitySchemes?.apiKey).toBeTruthy();
