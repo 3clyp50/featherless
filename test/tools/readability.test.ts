@@ -8,6 +8,7 @@ describe("readability metrics", () => {
     expect(scores.sentence_count).toBe(2);
     expect(scores.flesch_kincaid_grade).toBeLessThan(6.9);
     expect(meetsReadingTarget(scores, "grade-6-en")).toBe(true);
+    expect(meetsReadingTarget(scores, "grade-5-en")).toBe(true);
   });
 
   it("reports plain Spanish with an acceptable INFLESZ score", () => {

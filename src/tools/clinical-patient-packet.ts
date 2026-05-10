@@ -34,6 +34,7 @@ interface GeneratePatientPacketOpts {
 }
 
 const DEFAULT_WORKERS_AI_MODEL = "@cf/openai/gpt-oss-120b";
+const PATIENT_PACKET_MAX_READING_GRADE = 6;
 
 function contentPartToText(part: unknown): string {
   if (typeof part === "string") return part;
@@ -189,10 +190,57 @@ function languageFromInput(args: PatientPacketInput): string {
   return args.language ?? args.visit_context.patient.preferred_language ?? "es-US";
 }
 
+function gradeFromTarget(target: string): number | null {
+  const normalized = target.trim().toLowerCase();
+  const gradeFirst = /\bgrade[-_\s]*(\d{1,2})\b/.exec(normalized);
+  if (gradeFirst?.[1]) return Number.parseInt(gradeFirst[1], 10);
+  const gradeLast = /\b(\d{1,2})(?:st|nd|rd|th)?[-_\s]*grade\b/.exec(normalized);
+  if (gradeLast?.[1]) return Number.parseInt(gradeLast[1], 10);
+  return null;
+}
+
+function readingTargetForLanguage(
+  language: string,
+  grade = PATIENT_PACKET_MAX_READING_GRADE,
+): string {
+  return `grade-${grade}-${isSpanish(language) ? "es" : "en"}`;
+}
+
+export function normalizeReadingLevelTarget(
+  target: string | null | undefined,
+  language: string,
+): string {
+  const grade = target ? gradeFromTarget(target) : null;
+  const effectiveGrade =
+    grade && grade > 0
+      ? Math.min(grade, PATIENT_PACKET_MAX_READING_GRADE)
+      : PATIENT_PACKET_MAX_READING_GRADE;
+  return readingTargetForLanguage(language, effectiveGrade);
+}
+
 function readingTargetFromInput(args: PatientPacketInput): string {
-  return (
-    args.reading_level_target ?? args.visit_context.patient.reading_level_target ?? "grade-6-es"
+  return normalizeReadingLevelTarget(
+    args.reading_level_target ?? args.visit_context.patient.reading_level_target,
+    languageFromInput(args),
   );
+}
+
+function normalizePacketInput(args: PatientPacketInput): PatientPacketInput {
+  const language = languageFromInput(args);
+  const target = readingTargetFromInput(args);
+  return {
+    ...args,
+    language,
+    reading_level_target: target,
+    visit_context: {
+      ...args.visit_context,
+      patient: {
+        ...args.visit_context.patient,
+        preferred_language: args.visit_context.patient.preferred_language ?? language,
+        reading_level_target: target,
+      },
+    },
+  };
 }
 
 function buildSystemPrompt(citationIds: string[]): string {
@@ -200,7 +248,10 @@ function buildSystemPrompt(citationIds: string[]): string {
     "You are Featherless, a clinical visit workflow tool.",
     "Generate patient-facing education only from the provided visit_context and allowed citation IDs.",
     "Do not diagnose, prescribe, invent doses, invent dates, or add over-the-counter advice.",
-    "Use plain language, short sentences, and action-oriented organization.",
+    "Use plain patient-friendly language at or below the requested reading_level_target.",
+    `Never write patient packets above grade ${PATIENT_PACKET_MAX_READING_GRADE}.`,
+    "Use short sentences. Avoid medical jargon unless you explain it in simple words.",
+    "Write clear action steps that a patient can follow after the visit.",
     "Return exactly one valid JSON object and no other text.",
     "Use double-quoted keys and strings, comma-separate every array item, and never use comments or trailing commas.",
     "If a clinical value is missing, omit it or say it was not available; never invent data.",
@@ -208,7 +259,7 @@ function buildSystemPrompt(citationIds: string[]): string {
     JSON.stringify(
       {
         language: "es-US",
-        reading_level_target: "grade-6-es",
+        reading_level_target: readingTargetForLanguage("es-US"),
         title: "string",
         sections: {
           what_we_did_today: "string",
@@ -240,18 +291,20 @@ function buildUserPrompt(
   citationIds: string[],
   retryNote?: string,
 ): string {
-  const language = languageFromInput(args);
-  const target = readingTargetFromInput(args);
+  const normalizedArgs = normalizePacketInput(args);
+  const language = languageFromInput(normalizedArgs);
+  const target = readingTargetFromInput(normalizedArgs);
   return [
     `language: ${language}`,
     `reading_level_target: ${target}`,
+    `readability_policy: Patient-facing language must be at or below ${target}; Featherless never allows patient packets above grade ${PATIENT_PACKET_MAX_READING_GRADE}.`,
     `allowed_citation_ids: ${citationIds.join(", ")}`,
     "draft_packet_json:",
-    JSON.stringify(buildTemplatePatientPacket(args, citationIds), null, 2),
+    JSON.stringify(buildTemplatePatientPacket(normalizedArgs, citationIds), null, 2),
     "visit_context:",
-    JSON.stringify(args.visit_context, null, 2),
+    JSON.stringify(normalizedArgs.visit_context, null, 2),
     "chart_text:",
-    textFromVisitContext(args.visit_context),
+    textFromVisitContext(normalizedArgs.visit_context),
     retryNote ? `previous_generation_feedback: ${retryNote}` : "",
   ]
     .filter(Boolean)
@@ -262,9 +315,10 @@ export function buildTemplatePatientPacket(
   args: PatientPacketInput,
   citationIds: string[],
 ): GeneratedPatientPacket {
-  const ctx = args.visit_context;
-  const language = languageFromInput(args);
-  const target = readingTargetFromInput(args);
+  const normalizedArgs = normalizePacketInput(args);
+  const ctx = normalizedArgs.visit_context;
+  const language = languageFromInput(normalizedArgs);
+  const target = readingTargetFromInput(normalizedArgs);
   const labels = labelsFor(language);
   const newMed =
     ctx.medication_changes.find((m) => m.action === "new") ?? ctx.medication_changes[0];
@@ -394,28 +448,50 @@ function validationRetryNote(grounding: ReturnType<typeof validateGrounding>): s
   });
 }
 
+function readabilityRetryNote(scores: ReturnType<typeof scoreReadability>, target: string): string {
+  return JSON.stringify({
+    readability_target: target,
+    measured_flesch_kincaid_grade: scores.flesch_kincaid_grade,
+    measured_inflesz_score: scores.inflesz_score,
+    instruction: `Rewrite with shorter sentences and simpler words so patient-facing language is at or below ${target}.`,
+  });
+}
+
 export async function generatePatientPacket(
   args: PatientPacketInput,
   opts: GeneratePatientPacketOpts = {},
 ): Promise<PatientPacketOutput | Dict> {
+  const normalizedArgs = normalizePacketInput(args);
   const citationIds = args.citation_ids ?? [...DEFAULT_ALLOWED_CITATION_IDS];
   const system = buildSystemPrompt(citationIds);
   let retryNote: string | undefined;
   let lastGrounding: ReturnType<typeof validateGrounding> | null = null;
+  let lastReadability: ReturnType<typeof scoreReadability> | null = null;
   let lastModel = "";
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const user = buildUserPrompt(args, citationIds, retryNote);
+      const user = buildUserPrompt(normalizedArgs, citationIds, retryNote);
       const llm = await callLlm({ system, user }, opts);
       lastModel = llm.model;
-      const generated = generatedPatientPacketSchema.parse(parseJsonObject(llm.text));
+      const rawGenerated = generatedPatientPacketSchema.parse(parseJsonObject(llm.text));
+      const language = languageFromInput(normalizedArgs);
+      const target = normalizeReadingLevelTarget(rawGenerated.reading_level_target, language);
+      const generated: GeneratedPatientPacket = {
+        ...rawGenerated,
+        language,
+        reading_level_target: target,
+      };
       const packet_markdown = renderPacketMarkdown(generated);
-      const target = generated.reading_level_target;
       const scores = scoreReadability(packet_markdown);
+      lastReadability = scores;
+      if (!meetsReadingTarget(scores, target)) {
+        retryNote = readabilityRetryNote(scores, target);
+        continue;
+      }
       const grounding = validateGrounding({
         text: packet_markdown,
-        visit_context: args.visit_context,
+        visit_context: normalizedArgs.visit_context,
         allowed_citation_ids: citationIds,
         citations_used: generated.citations_used,
       });
@@ -464,11 +540,13 @@ export async function generatePatientPacket(
   }
 
   return {
-    error: "grounding_validation_failed",
-    message: "Generated patient packet did not pass grounding validation after retry.",
+    error: "patient_packet_validation_failed",
+    message:
+      "Generated patient packet did not pass readability and grounding validation after retry.",
     provider: "workers_ai",
     model: lastModel,
     grounding: lastGrounding,
+    readability: lastReadability,
   };
 }
 

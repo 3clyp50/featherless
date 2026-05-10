@@ -69,8 +69,9 @@ export function meetsReadingTarget(scores: ReadabilityScores, target: string): b
   const t = target.trim().toLowerCase();
   const parts = t.split(/[-_]/).filter(Boolean);
   if (parts.includes("es")) return scores.inflesz_score >= 55;
-  if (t.includes("grade-6") || t.includes("grade 6")) {
-    return scores.flesch_kincaid_grade <= 6.9;
+  const gradeMatch = /\bgrade[-_\s]*(\d{1,2})\b/.exec(t);
+  if (gradeMatch?.[1]) {
+    return scores.flesch_kincaid_grade <= Number.parseInt(gradeMatch[1], 10) + 0.9;
   }
   console.warn(
     `Unknown reading_level_target "${target}" parsed as [${parts.join(", ")}]; treating as unmet.`,

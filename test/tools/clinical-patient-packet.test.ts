@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildTemplatePatientPacket,
   generatePatientPacket,
+  normalizeReadingLevelTarget,
   workersAiClientFromEnv,
 } from "../../src/tools/clinical-patient-packet.ts";
 import { validateGrounding } from "../../src/tools/grounding-validator.ts";
@@ -32,6 +33,13 @@ async function rpc(method: string, params?: unknown): Promise<JsonRpcResponse> {
 }
 
 describe("clinical_generate_patient_packet", () => {
+  it("normalizes upstream reading targets to the Featherless max-grade policy", () => {
+    expect(normalizeReadingLevelTarget("8th Grade", "en-US")).toBe("grade-6-en");
+    expect(normalizeReadingLevelTarget("grade-8-es", "es-US")).toBe("grade-6-es");
+    expect(normalizeReadingLevelTarget("grade-5-en", "en-US")).toBe("grade-5-en");
+    expect(normalizeReadingLevelTarget("plain-language", "en-US")).toBe("grade-6-en");
+  });
+
   it("appears in tools/list", async () => {
     const r = await rpc("tools/list");
     const tools = (r.result as { tools: { name: string }[] }).tools;
@@ -103,6 +111,121 @@ describe("clinical_generate_patient_packet", () => {
     expect(parsed.data.packet_markdown).toContain("## Your medicines now");
     expect(parsed.data.packet_markdown).not.toContain("## Lo que hicimos hoy");
     expect(parsed.data.packet_markdown).not.toContain("## Sus medicinas ahora");
+  });
+
+  it("clamps higher platform reading targets before prompting and reporting", async () => {
+    const highTargetContext: VisitContext = {
+      ...heroVisitContext,
+      patient: {
+        ...heroVisitContext.patient,
+        preferred_language: "en-US",
+        reading_level_target: "8th Grade",
+      },
+    };
+    const input = {
+      visit_context: highTargetContext,
+      language: "en-US",
+      reading_level_target: "8th Grade",
+      citation_ids: ["CIT-001", "CIT-005", "CIT-006"],
+    };
+    const packet = {
+      language: "en-US",
+      reading_level_target: "8th Grade",
+      title: "Your visit plan, Maria Garcia",
+      sections: {
+        what_we_did_today: "We checked your heart today. You are doing better.",
+        medications: [],
+        watch_for: ["Call if you feel worse."],
+        next_steps: ["Take your medicines as listed."],
+        when_to_call: ["Call if your weight goes up."],
+        when_to_go_to_er: ["Go to the ER for chest pain."],
+        citations_footer: "This uses clear steps for patients [CIT-001].",
+      },
+      citations_used: ["CIT-001"],
+    };
+    let seenSystem = "";
+    let seenUser = "";
+    const output = await generatePatientPacket(input, {
+      llm: {
+        async generate(request) {
+          seenSystem = request.system;
+          seenUser = request.user;
+          return { model: "@cf/test/model", text: JSON.stringify(packet) };
+        },
+      },
+      now: () => new Date("2026-05-10T00:00:00.000Z"),
+    });
+    const parsed = patientPacketOutputSchema.safeParse(output);
+    expect(parsed.success, parsed.success ? "" : JSON.stringify(parsed.error.format())).toBe(true);
+    if (!parsed.success) return;
+    expect(seenSystem).toContain("Never write patient packets above grade 6");
+    expect(seenUser).toContain("reading_level_target: grade-6-en");
+    expect(seenUser).toContain("Featherless never allows patient packets above grade 6");
+    expect(seenUser).toContain('"reading_level_target": "grade-6-en"');
+    expect(seenUser).not.toContain("8th Grade");
+    expect(parsed.data.reading_level_target).toBe("grade-6-en");
+    expect(parsed.data.readability.target).toBe("grade-6-en");
+  });
+
+  it("retries once when generated text misses the grade-6 readability target", async () => {
+    const input = {
+      visit_context: {
+        ...heroVisitContext,
+        patient: {
+          ...heroVisitContext.patient,
+          preferred_language: "en-US",
+          reading_level_target: "grade-6-en",
+        },
+      },
+      language: "en-US",
+      citation_ids: ["CIT-001"],
+    };
+    const hardPacket = {
+      language: "en-US",
+      reading_level_target: "grade-6-en",
+      title: "Your visit plan, Maria Garcia",
+      sections: {
+        what_we_did_today:
+          "Cardiopulmonary optimization and longitudinal pharmacotherapeutic reconciliation were comprehensively performed during today's ambulatory consultation.",
+        medications: [],
+        watch_for: ["Call if respiratory decompensation becomes substantially worse."],
+        next_steps: ["Continue longitudinal monitoring and multidisciplinary coordination."],
+        when_to_call: ["Call if symptomatic exacerbation continues despite conservative measures."],
+        when_to_go_to_er: ["Go to the emergency department for severe cardiopulmonary distress."],
+        citations_footer: "This uses clear steps for patients [CIT-001].",
+      },
+      citations_used: ["CIT-001"],
+    };
+    const easyPacket = {
+      ...hardPacket,
+      sections: {
+        ...hardPacket.sections,
+        what_we_did_today: "We checked your health today. You are doing better.",
+        watch_for: ["Call if you feel worse."],
+        next_steps: ["Rest and follow your plan."],
+        when_to_call: ["Call if your weight goes up."],
+        when_to_go_to_er: ["Go to the ER for chest pain."],
+      },
+    };
+    let calls = 0;
+    const output = await generatePatientPacket(input, {
+      llm: {
+        async generate() {
+          calls += 1;
+          return {
+            model: "@cf/test/model",
+            text: JSON.stringify(calls === 1 ? hardPacket : easyPacket),
+          };
+        },
+      },
+      now: () => new Date("2026-05-10T00:00:00.000Z"),
+    });
+    const parsed = patientPacketOutputSchema.safeParse(output);
+    expect(calls).toBe(2);
+    expect(parsed.success, parsed.success ? "" : JSON.stringify(parsed.error.format())).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.readability.target).toBe("grade-6-en");
+    expect(parsed.data.readability.meets_target).toBe(true);
   });
 
   it("accepts null vitals and labs from platform-generated visit context arguments", async () => {
