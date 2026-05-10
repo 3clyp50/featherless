@@ -22,7 +22,11 @@ async function rpc(
   const body = { jsonrpc: "2.0", id: 1, method, params };
   const res = await SELF.fetch("http://localhost/mcp", {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...(headers ?? {}) },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+      ...(headers ?? {}),
+    },
     body: JSON.stringify(body),
   });
   expect(res.ok).toBe(true);
