@@ -1,6 +1,6 @@
 # TODO.md — Featherless (Native Visit Workflow)
 
-**Spec:** `PLAN.md` (this folder), `../HERO_PATIENT.md`, `../CITATIONS.md`, `../DECISIONS.md`.
+**Spec:** `PLAN.md`, `HERO_PATIENT.md`, `CITATIONS.md`, `DECISIONS.md`.
 **Submission:** Mon 2026-05-11, 18:00 Europe/Rome.
 **Today:** Sun 2026-05-10 (D5).
 **Repo:** https://github.com/TerminallyLazy/featherless · **Authors (in order):** Chadwick, Alessandro Frau.
@@ -16,7 +16,7 @@ Every block below is a **scope**, owned by one subagent. PLAN.md §11 has the fu
 2. **Create `agents/<scope>/TODO.md`** at start. Copy the relevant lines from this file verbatim under `## Mirrored tasks`. Update statuses there *as you work*, not at the end. This file survives any context compaction.
 3. **Touch only files in your `Writable` list.** Anything else → judge rejects the scope.
 4. **Log decisions in your mirror TODO.** Any non-obvious choice (a schema field name, a retry count, a fallback path) goes under `## Decisions log` with one-line rationale. Future-you will thank present-you.
-5. **Surface contract questions, don't guess.** If `../HERO_PATIENT.md` §7 contradicts PLAN §4, raise it in `## Open contract questions` and tag it `block` or `non-block`. The judge or the human resolves; you do not invent.
+5. **Surface contract questions, don't guess.** If `HERO_PATIENT.md` §7 contradicts PLAN §4, raise it in `## Open contract questions` and tag it `block` or `non-block`. The judge or the human resolves; you do not invent.
 6. **Output contract:** at end, your final message is (a) files created/modified, (b) one paragraph of decisions made, (c) any open questions. No "I have successfully completed…" prose.
 
 The **judge subagent** merges, runs `pnpm typecheck && pnpm lint && pnpm test`, and rejects anything that drifted from the contract. Acceptance gates are mechanical, not editorial.
@@ -71,9 +71,9 @@ These are pass/fail. If any one is red at submit time, we don't get judged.
 - [x] ~~**08:00** [`S-orchestrator`] Scaffold `orchestrator/`~~ **DONE** — separate `wrangler-orchestrator.jsonc`, native Worker `orchestrator/src/index.ts`, public AgentCard route, and JSON-RPC `message/send` dispatcher. No `@a2a-js/sdk`, Express, Hono, or extra router dependency.
 - [x] ~~**09:00** [`S-orchestrator`] SHARP header forwarding test~~ **DONE** — Vitest asserts A2A FHIR metadata becomes `X-FHIR-Server-URL`, `X-FHIR-Access-Token`, and `X-Patient-ID` on outgoing MCP calls; response payloads never return the token; AgentCard fields match the local Prompt Opinion SDK reference.
 - [x] ~~**09:30** [judge] orchestrator trace test~~ **DONE** — mocked MCP e2e-style test proves the three-tool sequence (`clinical_pack_visit_context` → `clinical_generate_patient_packet` → `clinical_prepare_care_team_closure`) and non-zero trace timings. Substrate HAPI path remains covered by `npm test`; deployed PO registration remains in the D6 gate.
-- [ ] **10:00** [`S-po-publish-and-readme`] Migrate `../HERO_PATIENT.md`, `../CITATIONS.md`, `../DECISIONS.md`, `../BACKLOG.md`, `../LICENSE` into this folder. Update paths in PLAN.md.
-- [ ] **10:15** [`S-po-publish-and-readme`] Write `docs/po-registration.md` — judge-facing step-by-step: (1) paste `<featherless-url>/mcp` into `Configuration → MCP Servers`, click Continue, accept the `ai.promptopinion/fhir-context` extension and the requested SMART scopes; (2) paste `<orchestrator-url>/.well-known/agent-card.json` into `Agents → External Agents`, accept FHIR-context extension; (3) launch a BYO Agent → "Consult with another agent" → select `featherless`; (4) ask "generate the visit packet for the current patient." Include screenshots placeholder slots for `docs/sharp-proof/`.
-- [ ] **10:30** [`S-po-publish-and-readme`] README skeleton at 80% — 14-section AGENT4 §5.2 structure, hero quote, hackathon table, 3 sourced stats from `../CITATIONS.md`, tool table, orchestrator paragraph, hero patient, AI Factor 4-bullet section, ASCII architecture diagram (copy from PLAN.md §3), $0-cost tech stack, 5Ts matrix, standards block, timeline, MIT license. **Authors: Chadwick (first), Alessandro Frau (second).** No `marketplace.yaml`.
+- [x] ~~**10:00** [`S-po-publish-and-readme`] Migrate docs into this folder~~ **DONE** — `HERO_PATIENT.md`, `CITATIONS.md`, `DECISIONS.md`, `BACKLOG.md`, and `LICENSE` now live in `featherless/` and reflect the current TypeScript / Workers AI architecture.
+- [x] ~~**10:15** [`S-po-publish-and-readme`] Write `docs/po-registration.md`~~ **DONE** — judge-facing steps cover the MCP URL, A2A AgentCard URL, FHIR context extension, expected tools, screenshots, and troubleshooting.
+- [x] ~~**10:30** [`S-po-publish-and-readme`] README skeleton at 80%~~ **DONE** — README has the hackathon table, sourced stats, tools table, orchestrator section, hero patient, AI Factor, architecture, 5Ts, standards, timeline, MIT license, and authors. No `marketplace.yaml`.
 - [ ] **11:30** **Submit Devpost as draft tonight** — placeholder video link OK, everything else final-shape.
 - [ ] **11:45** `git tag d5-eod-green`. Sleep.
 
@@ -83,7 +83,7 @@ These are pass/fail. If any one is red at submit time, we don't get judged.
 - [x] Orchestrator contract test runs end-to-end with full trace
 - [ ] Both URLs (featherless `/mcp`, orchestrator `/.well-known/agent-card.json`) register cleanly in a fresh PO workspace
 - [ ] Devpost draft submitted
-- [ ] README at 80%
+- [x] README at 80%
 
 If any of these is red → record an *insurance* rough-cut video tonight even if hideous. Same rule as the original D3 plan.
 
@@ -98,7 +98,7 @@ If any of these is red → record an *insurance* rough-cut video tonight even if
 - [ ] **00:00** Deploy both Workers to Cloudflare. Verify SHARP headers in network tab against the *deployed* URL (not local). Screenshot to `docs/sharp-proof/01-network-tab.png`.
 - [ ] **00:30** Register both URLs in a fresh PO workspace per `docs/po-registration.md`. Screenshot the workspace listing (MCP servers + External Agents pages) to `docs/sharp-proof/02-po-listing.png`.
 - [ ] **01:00** Run end-to-end through PO workspace once. Screenshot the orchestrator trace pane to `docs/sharp-proof/03-trace.png`. **This is the only run where it matters that it works in PO; if PO integration breaks here, fall back to local-Worker demo and document it in README under "Limitations."**
-- [ ] **01:30** Record final 2:45–2:55 video to AGENT4 §5.4 beat list. Two takes max. Pick the better one.
+- [ ] **01:30** Record final 2:45–2:55 video to the hackathon beat list. Two takes max. Pick the better one.
   - 0:00–0:15 patient hook (Mrs. García leaving the cardiologist)
   - 0:15–0:35 three statistics on screen, sourced from CITATIONS
   - 0:35–1:30 PO platform run — agent handshake, A2A trace pane, tools fire
@@ -119,7 +119,7 @@ If any of these is red → record an *insurance* rough-cut video tonight even if
 - [ ] **05:30** README at 100%. Both video links embedded. License + citations + decisions + backlog all in place at repo root.
 - [ ] **06:00** Update Devpost with real video link. Re-read submission once. Check video plays from cold link.
 - [ ] **06:30** **Submit final.** Do not submit at 02:55 UTC tomorrow. Submit by 18:00 Europe/Rome today.
-- [ ] **07:00** Post-submit: tweet, share to PO community, send to AGENT4-named contacts.
+- [ ] **07:00** Post-submit: tweet, share to PO community, send to the named hackathon contacts.
 
 ### D6 EOD gate
 

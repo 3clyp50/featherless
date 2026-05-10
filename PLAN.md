@@ -5,14 +5,14 @@
 **Authors (in submission order):** Chadwick (first), Alessandro Frau (second).
 **Hackathon:** Agents Assemble — The Healthcare AI Endgame.
 **Internal deadline:** Mon **2026-05-11, 18:00 Europe/Rome** (Devpost cutoff Tue 03:00 UTC; we land 5+ hours early).
-**Authoritative specs (do not re-derive):** `../HERO_PATIENT.md`, `../CITATIONS.md`, `../DECISIONS.md`, `../AGENT3-SHARP.md`, `../AGENT4-SHARP.md`.
+**Authoritative specs (do not re-derive):** `HERO_PATIENT.md`, `CITATIONS.md`, `DECISIONS.md`, `BACKLOG.md`, `docs/po-registration.md`.
 **Operating rule (unchanged):** every task must score on at least one of {AI Factor, Potential Impact, Feasibility}. If it doesn't, cut it.
 
 ---
 
 ## 1. The decision
 
-We ship **Option B**: the visit workflow is rebuilt natively in TypeScript on top of the `featherless` substrate. The old Python prototype is archived; nothing from it gets deployed. Everything in `../HERO_PATIENT.md`, `../CITATIONS.md`, `../DECISIONS.md` is **migrated, not re-decided** — those documents are the spec, not the implementation.
+We ship **Option B**: the visit workflow is rebuilt natively in TypeScript on top of the `featherless` substrate. The old Python prototype is archived; nothing from it gets deployed. `HERO_PATIENT.md`, `CITATIONS.md`, and `DECISIONS.md` now live in this folder as the submission specs.
 
 This is a stretch on the timeline. The plan in §6 is the only way it lands.
 
@@ -22,7 +22,7 @@ This is a stretch on the timeline. The plan in §6 is the only way it lands.
 |---|---|---|
 | A · Bridge | Old Python prototype calls featherless as backend | Two stacks to demo, two deploys to publish, weakens "TypeScript edge" story |
 | **B · Native TS rebuild** | **3 Featherless tools + orchestrator natively on featherless** | **Single coherent stack, every judge sentence intact, edge-deployed becomes a *feature* in the video** |
-| C · Reframe to substrate only | Drop the visit workflow, ship substrate | Throws away Mrs. Garcia, Spanish, grade-6 — kills Hickey + Mathur + Zheng sentences and the visceral hook |
+| C · Reframe to substrate only | Drop the visit workflow, ship substrate | Throws away Mrs. García, Spanish, grade-6 — kills Hickey + Mathur + Zheng sentences and the visceral hook |
 
 ## 3. Architecture
 
@@ -104,14 +104,14 @@ This is a stretch on the timeline. The plan in §6 is the only way it lands.
 | LLM for patient packet | **Cloudflare Workers AI** through the existing `AI` binding, with `LLM_MODEL` selecting the model | Keeps patient context inside the Cloudflare Worker boundary, avoids third-party LLM API keys, and strengthens the healthcare safety story. |
 | FHIR write-back posture | **Emit resources as JSON; do NOT POST by default**; `WRITE_BACK=1` env flag enables PUT to HAPI | HAPI public sandbox is read-only/flaky; local HAPI Docker is fine but risky to demo over network. The point is the *resources are correct*, not that they ship. |
 | Reading-level metrics | Implement Flesch-Kincaid (English) + INFLESZ / Szigriszt-Pazos (Spanish) inline (~60 LOC total) | No reliable npm dep on Workers; hand-roll is shorter than picking and patching one. |
-| Hero patient | **Hand-crafted FHIR bundle for María Garcia**, posted to local HAPI Docker once | Synthea is overkill; hand-crafting matches `../HERO_PATIENT.md` §1–§5 verbatim. |
+| Hero patient | **Hand-crafted FHIR bundle for María Garcia**, posted to local HAPI Docker once | Synthea is overkill; hand-crafting matches `HERO_PATIENT.md` §1–§5 verbatim. |
 | Citation grounding | System prompt includes the citation allow-list; post-generation validator rejects any direct quote not present in the allow-list or the chart | Defends Mathur's sentence: every claim traces to chart or `CITATIONS.md`. |
 | Orchestrator deploy | **Same repo, separate `orchestrator/` directory, separate `wrangler-orchestrator.jsonc`, separate Worker** | Real two-deployable A2A flow without a second repo. |
 | Tests | vitest unit (each Featherless visit-workflow tool) + one e2e against local HAPI + hero patient | Stops at "the demo is reproducible," not "100% coverage." |
 
 ## 6. The six judge sentences — re-mapped to TS architecture
 
-Migrated verbatim where possible from `../DECISIONS.md` D-002. Any change is annotated.
+Migrated from `DECISIONS.md` and updated for the native Workers implementation.
 
 - **S1 · Mandel (standards):** "Featherless never stores credentials. SHARP context flows from the Prompt Opinion host through the orchestrator straight into our MCP server, the FHIR graph is read with standards-correct intents, and the workflow writes back as ordinary FHIR `DocumentReference`, `CommunicationRequest`, and `Task` resources." *[Featherless's strict-mode + JWT-fallback context layer makes this stronger than the Python version.]*
 - **S2 · Hickey (workflow):** "Launched from the clinician workspace, reviewed before send, returns a patient-ready packet plus actionable team tasks." *[Unchanged.]*
@@ -137,9 +137,9 @@ Migrated verbatim where possible from `../DECISIONS.md` D-002. Any change is ann
 - [ ] Both Workers deployed: featherless + orchestrator. Health checks return ok from public URLs.
 - [ ] **PO workspace registration proven**: in a fresh PO workspace, featherless URL added under `Configuration → MCP Servers` (PO reads the `ai.promptopinion/fhir-context` extension from `initialize`); orchestrator agent-card URL added under `Agents → External Agents`. Both visible in launchpad, both invokable via "Consult with another agent".
 - [ ] `docs/sharp-proof/` contains 3 screenshots: SHARP headers in browser dev-tools network tab on a real `tools/call`; the orchestrator trace pane; the PO workspace listing showing both registrations.
-- [ ] README at 100% per AGENT4 §5.2 (14 sections).
+- [ ] README at 100% with hackathon requirements, registration steps, authors, license, and verification notes.
 - [ ] `HERO_PATIENT.md`, `CITATIONS.md`, `DECISIONS.md`, `BACKLOG.md`, `LICENSE` (MIT) at repo root.
-- [ ] Final video uploaded to YouTube unlisted, 2:45–2:55, hits AGENT4 §5.4 beat list.
+- [ ] Final video uploaded to YouTube unlisted, 2:45–2:55, showing Featherless functioning inside Prompt Opinion.
 - [ ] Judge walkthrough Loom, 5–7 min, public link tested cold.
 - [ ] Devpost final-submitted before 18:00 Europe/Rome with both video links.
 
@@ -185,12 +185,12 @@ For every subagent brief:
 | Scope | Writable | Read-only context | Acceptance |
 |---|---|---|---|
 | ~~`S-po-manifest-spike`~~ **RESOLVED 2026-05-10** | `agents/S-po-manifest-spike/DECISION.md` (written) | — | **Outcome:** PO accepts external A2A agents (agent-card URL) + MCP servers (URL + `initialize` extension). No `marketplace.yaml`. Two-Worker A2A confirmed; orchestrator must hand-roll the A2A surface for Workers. |
-| `S-hero-bundle` | `scripts/hero-bundle.json`, `scripts/load-hero.ts` | `../HERO_PATIENT.md` §1–§5, §7 | `clinical_get_context` against loaded bundle returns Mrs. García's 5 problems + 6 meds (1 new) |
-| `S-tool1-visit-context-packer` | `src/tools/clinical-visit-context.ts`, `src/tools/schemas/visit-context.ts`, `test/tools/clinical-visit-context.test.ts` | `src/tools/clinical-context.ts`, `src/clients/fhir-client.ts`, `../HERO_PATIENT.md` §7 (canonical output) | unit test: output JSON matches the §7 canonical example for hero patient; `medication_changes[*].action="new"` for furosemide |
-| `S-tool2-patient-packet` | `src/tools/clinical-patient-packet.ts`, `src/tools/schemas/patient-packet.ts`, `src/tools/readability.ts`, `src/tools/grounding-validator.ts`, `test/tools/clinical-patient-packet.test.ts`, `test/tools/readability.test.ts` | tool 1 output schema, `../CITATIONS.md` allow-list, `../HERO_PATIENT.md` §7 + §8 + §9 | unit test: Spanish output, FK + INFLESZ reported, grounding-validator passes for canonical case and rejects a tampered phrase |
-| `S-tool3-care-team-closure` | `src/tools/clinical-care-team-closure.ts`, `src/tools/schemas/care-team-closure.ts`, `test/tools/clinical-care-team-closure.test.ts` | `src/clients/fhir-client.ts` (read-only), R4 spec for Task / CommunicationRequest / DocumentReference, `../HERO_PATIENT.md` §7 | unit test: 3 Task + 1 CommunicationRequest + 1 DocumentReference; all R4-validate via local HAPI `$validate`; `CommunicationRequest.status="draft"` with `intent="proposal"` |
+| `S-hero-bundle` | `scripts/hero-bundle.json`, `scripts/load-hero.ts` | `HERO_PATIENT.md` §1–§5, §7 | `clinical_get_context` against loaded bundle returns Mrs. García's 5 problems + 6 meds (1 new) |
+| `S-tool1-visit-context-packer` | `src/tools/clinical-visit-context.ts`, `src/tools/schemas/visit-context.ts`, `test/tools/clinical-visit-context.test.ts` | `src/tools/clinical-context.ts`, `src/clients/fhir-client.ts`, `HERO_PATIENT.md` §7 (canonical output) | unit test: output JSON matches the §7 canonical example for hero patient; `medication_changes[*].action="new"` for furosemide |
+| `S-tool2-patient-packet` | `src/tools/clinical-patient-packet.ts`, `src/tools/schemas/patient-packet.ts`, `src/tools/readability.ts`, `src/tools/grounding-validator.ts`, `test/tools/clinical-patient-packet.test.ts`, `test/tools/readability.test.ts` | tool 1 output schema, `CITATIONS.md` allow-list, `HERO_PATIENT.md` §7 + §8 + §9 | unit test: Spanish output, FK + INFLESZ reported, grounding-validator passes for canonical case and rejects a tampered phrase |
+| `S-tool3-care-team-closure` | `src/tools/clinical-care-team-closure.ts`, `src/tools/schemas/care-team-closure.ts`, `test/tools/clinical-care-team-closure.test.ts` | `src/clients/fhir-client.ts` (read-only), R4 spec for Task / CommunicationRequest / DocumentReference, `HERO_PATIENT.md` §7 | unit test: 3 Task + 1 CommunicationRequest + 1 DocumentReference; all R4-validate via local HAPI `$validate`; `CommunicationRequest.status="draft"` with `intent="proposal"` |
 | `S-orchestrator` | `orchestrator/`, `wrangler-orchestrator.jsonc`, `test/orchestrator/orchestrator.test.ts` | `src/index.ts` (header propagation pattern), `src/context.ts`, `../po-adk-typescript/shared/appFactory.ts` (reference AgentCard shape, lines 257-278; do not import — Workers can't run Express) | unit tests: (a) `GET /.well-known/agent-card.json` returns valid AgentCard with `preferredTransport: "JSONRPC"` + FHIR-context extension; (b) `POST /` JSON-RPC `message/send` accepts an A2A message, extracts `metadata["…/fhir-context"]`, translates → `X-FHIR-*` headers on outgoing MCP calls verbatim, never logged; (c) full trace returned with non-zero `ms` per hop. **Hand-roll with native Worker `fetch()` — do not depend on `@a2a-js/sdk`, Express, or a new router dependency.** |
-| `S-po-publish-and-readme` *(was `S-marketplace-and-readme`)* | `README.md`, `LICENSE`, `docs/po-registration.md` (new — step-by-step paste-the-URL guide for judges) | every other scope's output, `../AGENT4-SHARP.md` §5.2, `agents/S-po-manifest-spike/DECISION.md` | featherless URL + orchestrator agent-card URL both register cleanly in a fresh PO workspace; README has all 14 sections; LICENSE is MIT; **authors listed in this order: Chadwick (first), Alessandro Frau (second)**. No `marketplace.yaml` — that artifact was a pre-spike hypothesis that does not match PO's actual onboarding. |
+| `S-po-publish-and-readme` *(was `S-marketplace-and-readme`)* | `README.md`, `LICENSE`, `HERO_PATIENT.md`, `CITATIONS.md`, `DECISIONS.md`, `BACKLOG.md`, `docs/po-registration.md`, `docs/sharp-proof/README.md` | every other scope's output, `agents/S-po-manifest-spike/DECISION.md` | featherless URL + orchestrator agent-card URL both register cleanly in a fresh PO workspace; README has the hackathon-critical sections; LICENSE is MIT; **authors listed in this order: Chadwick (first), Alessandro Frau (second)**. No `marketplace.yaml` — that artifact was a pre-spike hypothesis that does not match PO's actual onboarding. |
 | `S-judge-merge` | merge commits only | every scope's PR + every scope's mirror TODO + this PLAN | every scope's tests pass after merge; no scope edited a file outside its declared writable list; mirror TODOs match the global TODO at merge time |
 
 ### Judge subagent contract
