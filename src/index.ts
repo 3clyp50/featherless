@@ -70,6 +70,17 @@ class StreamableHttpBridge {
         const response = await this.mcpServer.handleRequest(message);
         if (response !== null) {
           await this.transport.send(response as JSONRPCMessage);
+        } else if (isJSONRPCRequest(message)) {
+          // Server returned null for a request (malformed: notification-method
+          // sent with an id, or a future code path). In JSON-response mode the
+          // outer Promise from transport.handleRequest only resolves when
+          // transport.send() fires resolveJson — without this fallback the
+          // Worker would hang until its wall budget expires.
+          await this.transport.send({
+            jsonrpc: "2.0",
+            id: message.id,
+            error: { code: -32600, message: `Invalid Request: ${message.method}` },
+          });
         }
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
