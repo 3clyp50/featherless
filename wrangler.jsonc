@@ -10,7 +10,7 @@
     "FEATHERLESS_DEV_MODE": "0",
     "MEM0_DISABLED": "1",
     "WRITE_BACK": "0",
-    "LLM_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+    "LLM_MODEL": "@cf/moonshotai/kimi-k2.6"
   },
   "ai": { "binding": "AI" }
 }

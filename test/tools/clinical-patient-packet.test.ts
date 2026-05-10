@@ -6,6 +6,7 @@ import {
 } from "../../src/tools/clinical-patient-packet.ts";
 import { validateGrounding } from "../../src/tools/grounding-validator.ts";
 import { patientPacketOutputSchema } from "../../src/tools/schemas/patient-packet.ts";
+import type { VisitContext } from "../../src/tools/schemas/visit-context.ts";
 import { heroVisitContext } from "./fixtures.ts";
 
 interface JsonRpcResponse {
@@ -101,6 +102,54 @@ describe("clinical_generate_patient_packet", () => {
     expect(parsed.data.packet_markdown).toContain("## Your medicines now");
     expect(parsed.data.packet_markdown).not.toContain("## Lo que hicimos hoy");
     expect(parsed.data.packet_markdown).not.toContain("## Sus medicinas ahora");
+  });
+
+  it("accepts null vitals and labs from platform-generated visit context arguments", async () => {
+    const sparseVisitContext: VisitContext = {
+      ...heroVisitContext,
+      vitals_today: { bp: null, hr: null, weight_change_kg: null, weight_kg: null },
+      key_labs_recent: { egfr: null, k: null, a1c: null },
+    };
+    const input = {
+      visit_context: sparseVisitContext,
+      citation_ids: ["CIT-001", "CIT-005", "CIT-006"],
+    };
+    const template = buildTemplatePatientPacket(input, ["CIT-001", "CIT-005", "CIT-006"]);
+    const output = await generatePatientPacket(input, {
+      llm: {
+        async generate() {
+          return { model: "@cf/test/model", text: JSON.stringify(template) };
+        },
+      },
+      now: () => new Date("2026-05-10T00:00:00.000Z"),
+    });
+    const parsed = patientPacketOutputSchema.safeParse(output);
+    expect(parsed.success, parsed.success ? "" : JSON.stringify(parsed.error.format())).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.packet_markdown).toContain("María Garcia");
+    expect(parsed.data.grounding.ok).toBe(true);
+  });
+
+  it("retries once when Workers AI returns invalid JSON before a valid packet", async () => {
+    const input = {
+      visit_context: heroVisitContext,
+      citation_ids: ["CIT-001", "CIT-005", "CIT-006"],
+    };
+    const template = buildTemplatePatientPacket(input, ["CIT-001", "CIT-005", "CIT-006"]);
+    let calls = 0;
+    const output = await generatePatientPacket(input, {
+      llm: {
+        async generate() {
+          calls += 1;
+          if (calls === 1) return { model: "@cf/test/model", text: "{ not valid json" };
+          return { model: "@cf/test/model", text: JSON.stringify(template) };
+        },
+      },
+      now: () => new Date("2026-05-10T00:00:00.000Z"),
+    });
+    const parsed = patientPacketOutputSchema.safeParse(output);
+    expect(calls).toBe(2);
+    expect(parsed.success, parsed.success ? "" : JSON.stringify(parsed.error.format())).toBe(true);
   });
 
   it("rejects tampered unsupported quotes and unknown doses", () => {

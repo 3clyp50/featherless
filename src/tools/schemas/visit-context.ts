@@ -78,16 +78,16 @@ const orderShape = z.object({
 });
 
 const vitalsTodayShape = z.object({
-  bp: z.string().optional(),
-  hr: z.number().optional(),
-  weight_change_kg: z.number().optional(),
-  weight_kg: z.number().optional(),
+  bp: z.string().nullable().optional(),
+  hr: z.number().nullable().optional(),
+  weight_change_kg: z.number().nullable().optional(),
+  weight_kg: z.number().nullable().optional(),
 });
 
 const keyLabsShape = z.object({
-  egfr: z.number().optional(),
-  k: z.number().optional(),
-  a1c: z.number().optional(),
+  egfr: z.number().nullable().optional(),
+  k: z.number().nullable().optional(),
+  a1c: z.number().nullable().optional(),
 });
 
 export const visitContextOutputSchema = z.object({

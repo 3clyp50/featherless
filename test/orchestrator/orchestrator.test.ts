@@ -54,7 +54,7 @@ const packetOutput: PatientPacketOutput = {
     unknown_doses: [],
   },
   provider: "workers_ai",
-  model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  model: "@cf/moonshotai/kimi-k2.6",
   generated_at: "2026-05-10T00:00:00.000Z",
 };
 

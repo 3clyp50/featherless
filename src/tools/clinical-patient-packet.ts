@@ -33,7 +33,7 @@ interface GeneratePatientPacketOpts {
   now?: () => Date;
 }
 
-const DEFAULT_WORKERS_AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+const DEFAULT_WORKERS_AI_MODEL = "@cf/moonshotai/kimi-k2.6";
 
 interface PacketLabels {
   titlePrefix: string;
@@ -168,7 +168,9 @@ function buildSystemPrompt(citationIds: string[]): string {
     "Generate patient-facing education only from the provided visit_context and allowed citation IDs.",
     "Do not diagnose, prescribe, invent doses, invent dates, or add over-the-counter advice.",
     "Use plain language, short sentences, and action-oriented organization.",
-    "Return JSON only. Do not wrap it in Markdown.",
+    "Return exactly one valid JSON object and no other text.",
+    "Use double-quoted keys and strings, comma-separate every array item, and never use comments or trailing commas.",
+    "If a clinical value is missing, omit it or say it was not available; never invent data.",
     "Required JSON shape:",
     JSON.stringify(
       {
@@ -211,11 +213,13 @@ function buildUserPrompt(
     `language: ${language}`,
     `reading_level_target: ${target}`,
     `allowed_citation_ids: ${citationIds.join(", ")}`,
+    "draft_packet_json:",
+    JSON.stringify(buildTemplatePatientPacket(args, citationIds), null, 2),
     "visit_context:",
     JSON.stringify(args.visit_context, null, 2),
     "chart_text:",
     textFromVisitContext(args.visit_context),
-    retryNote ? `previous_validation_error: ${retryNote}` : "",
+    retryNote ? `previous_generation_feedback: ${retryNote}` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -406,6 +410,14 @@ export async function generatePatientPacket(
           error: "llm_config_required",
           message,
         };
+      }
+      if (attempt === 0) {
+        retryNote = JSON.stringify({
+          generation_error: message,
+          instruction:
+            "Return exactly one valid JSON object matching the required shape. Do not include Markdown or prose.",
+        });
+        continue;
       }
       return {
         error: "llm_generation_failed",
