@@ -9,14 +9,14 @@ import { hasFhir, parseSharpHeaders, runWithContext } from "./context.ts";
  * from request headers (per SHARP-on-MCP §3.2).
  */
 
-import type { Env } from "./env.ts";
-import { SERVER_NAME, SERVER_VERSION, buildServer } from "./server.ts";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import {
+  type JSONRPCMessage,
   isJSONRPCNotification,
   isJSONRPCRequest,
-  type JSONRPCMessage,
 } from "@modelcontextprotocol/sdk/types.js";
+import type { Env } from "./env.ts";
+import { SERVER_NAME, SERVER_VERSION, buildServer } from "./server.ts";
 
 export type { Env };
 
@@ -37,6 +37,7 @@ class StreamableHttpBridge {
   ) {
     this.transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined, // stateless — no session persistence
+      enableJsonResponse: true, // single request → single JSON response (no SSE)
     });
     this.transport.onerror = (err) => {
       console.error("[mcp.transport] error", err);
