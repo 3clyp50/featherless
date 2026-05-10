@@ -81,7 +81,7 @@ These are pass/fail. If any one is red at submit time, we don't get judged.
 
 - [x] Three Featherless visit-workflow tools work independently against the loaded hero patient
 - [x] Orchestrator contract test runs end-to-end with full trace
-- [ ] Both URLs (featherless `/mcp`, orchestrator `/.well-known/agent-card.json`) register cleanly in a fresh PO workspace
+- [ ] Both URLs (featherless `/mcp`, orchestrator `/.well-known/agent-card.json`) register cleanly in a fresh PO workspace — **blocked locally:** `npx wrangler whoami` reports not authenticated; both Workers pass `wrangler deploy --dry-run`.
 - [ ] Devpost draft submitted
 - [x] README at 80%
 

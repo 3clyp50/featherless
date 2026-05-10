@@ -11,6 +11,25 @@ This guide is for judges and teammates registering Featherless in a fresh Prompt
 
 Use deployed HTTPS URLs for final judging. Localhost URLs are useful only for development.
 
+## Deployment Preflight
+
+From this folder:
+
+```bash
+npx wrangler whoami
+npx wrangler deploy --dry-run
+npx wrangler deploy --config wrangler-orchestrator.jsonc --dry-run
+```
+
+On 2026-05-10, both dry-runs built successfully in this workspace, but `wrangler whoami` reported that Cloudflare authentication was missing. A logged-in Cloudflare session or API token is required before the real deploy commands can produce public URLs.
+
+Deploy commands:
+
+```bash
+npm run deploy
+npm run deploy:orchestrator
+```
+
 ## 1. Register The MCP Server
 
 1. Open Prompt Opinion.
