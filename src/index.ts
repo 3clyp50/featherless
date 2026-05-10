@@ -8,79 +8,62 @@ import { hasFhir, parseSharpHeaders, runWithContext } from "./context.ts";
  * Each /mcp POST runs inside an AsyncLocalStorage-scoped SharpContext built
  * from request headers (per SHARP-on-MCP §3.2).
  */
+
 import type { Env } from "./env.ts";
 import { SERVER_NAME, SERVER_VERSION, buildServer } from "./server.ts";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
 
 export type { Env };
 
-const JSON_HEADERS = { "Content-Type": "application/json" };
-const HANDSHAKE_METHODS = new Set([
-  "initialize",
-  "notifications/initialized",
-  "tools/list",
-  "ping",
-]);
+/**
+ * Bridges the SDK's Streamable HTTP transport to our custom McpServer.
+ *
+ * The SDK transport handles the HTTP protocol (session IDs, SSE streaming,
+ * GET/DELETE methods, CORS). We intercept incoming messages and route them
+ * through our existing server.handleRequest().
+ */
+class StreamableHttpBridge {
+  private transport: WebStandardStreamableHTTPServerTransport;
 
-async function handleMcp(request: Request, env: Env): Promise<Response> {
-  if (request.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405, headers: { Allow: "POST" } });
+  constructor(
+    private readonly mcpServer: ReturnType<typeof buildServer>,
+    private readonly strict: boolean,
+    private readonly ctx: ReturnType<typeof parseSharpHeaders>,
+  ) {
+    this.transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // stateless — no session persistence
+    });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json(
-      { jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } },
-      { status: 400 },
-    );
+  async handleRequest(request: Request): Promise<Response> {
+    // Wire up message handling before processing the request
+    this.transport.onmessage = async (message: JSONRPCMessage) => {
+      // Strict mode: reject tools/call without FHIR context
+      if (this.strict) {
+        const msg = message as { method?: string; id?: string | number | null };
+        if (msg.method === "tools/call" && !hasFhir(this.ctx)) {
+          await this.transport.send({
+            jsonrpc: "2.0",
+            id: msg.id ?? null,
+            error: {
+              code: -32001,
+              message:
+                "fhir_context_required: send X-FHIR-Server-URL and X-FHIR-Access-Token headers per SHARP-on-MCP §3.2.",
+            },
+          } as JSONRPCMessage);
+          return;
+        }
+      }
+
+      const response = await this.mcpServer.handleRequest(message as never);
+      if (response !== null) {
+        await this.transport.send(response as JSONRPCMessage);
+      }
+    };
+
+    return this.transport.handleRequest(request);
   }
-
-  // Build per-request SHARP context from headers.
-  const ctx = parseSharpHeaders(request, env);
-  const strict = env.SHARP_STRICT_CONTEXT === "1";
-
-  const dispatch = async (msg: {
-    method?: string;
-    id?: string | number | null;
-  }): Promise<unknown> => {
-    const server = buildServer(env);
-
-    // Strict mode: reject tools/call without context (handshake passes through).
-    if (
-      strict &&
-      msg.method === "tools/call" &&
-      !hasFhir(ctx) &&
-      !HANDSHAKE_METHODS.has(msg.method)
-    ) {
-      return {
-        jsonrpc: "2.0",
-        id: msg.id ?? null,
-        error: {
-          code: -32001,
-          message:
-            "fhir_context_required: send X-FHIR-Server-URL and X-FHIR-Access-Token headers per SHARP-on-MCP §3.2.",
-        },
-      };
-    }
-
-    return server.handleRequest(msg as never);
-  };
-
-  // Support batched requests (per JSON-RPC 2.0).
-  const responses = await runWithContext(ctx, async () => {
-    if (Array.isArray(body)) {
-      const results = await Promise.all(body.map((m) => dispatch(m)));
-      return results.filter((r) => r !== null);
-    }
-    return dispatch(body as { method?: string; id?: string | number | null });
-  });
-
-  if (responses === null || (Array.isArray(responses) && responses.length === 0)) {
-    return new Response(null, { status: 204 });
-  }
-
-  return new Response(JSON.stringify(responses), { status: 200, headers: JSON_HEADERS });
 }
 
 const INFO_HTML = `<!doctype html>
@@ -97,6 +80,16 @@ const INFO_HTML = `<!doctype html>
 </ul>
 <p>See <a href="https://www.sharponmcp.com/overview.html">sharponmcp.com</a> for the spec.</p>
 </body></html>`;
+
+async function handleMcp(request: Request, env: Env): Promise<Response> {
+  const ctx = parseSharpHeaders(request, env);
+  const strict = env.SHARP_STRICT_CONTEXT === "1";
+  const server = buildServer(env);
+
+  const bridge = new StreamableHttpBridge(server, strict, ctx);
+
+  return runWithContext(ctx, () => bridge.handleRequest(request));
+}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {

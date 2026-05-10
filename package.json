@@ -24,9 +24,10 @@
   },
   "dependencies": {
     "@mcp-ui/server": "^5.10.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "jose": "^5.9.6",
     "ulid": "^2.3.0",
-    "zod": "^3.23.8"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
