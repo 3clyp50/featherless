@@ -62,7 +62,7 @@ These are pass/fail. If any one is red at submit time, we don't get judged.
 - [x] ~~**06:00** [`S-tool2-patient-packet`] Citation-grounding validator~~ **DONE** — validator checks allowed citations, unsupported quoted phrases, and unknown dose strings; tests cover passing packet generation and tampered rejection.
 - [x] ~~**06:30** [`S-tool3-care-team-closure`] Build **`src/tools/clinical-care-team-closure.ts`**~~ **DONE** — emits 3 `Task` + 1 `CommunicationRequest` + 1 `DocumentReference` from visit context; R4-validates via FHIR `$validate`; `WRITE_BACK=1` is required for caller-requested PUT write-back and defaults off. Registered tool: `clinical_prepare_care_team_closure`.
 - [x] ~~**07:30** [`S-tool3-care-team-closure`] Vitest unit tests for tool 3~~ **DONE** — validates JSON shape, statuses, `intent`, `for.reference` chaining, local HAPI validation, and missing-SHARP-header handling.
-- [ ] **07:45** [judge] Merge S-tool2 + S-tool3; run typecheck + lint + tests; tag `d5-tools-green`.
+- [x] ~~**07:45** [judge] Merge S-tool2 + S-tool3; run typecheck + lint + tests; tag `d5-tools-green`~~ **DONE** — three native Featherless visit-workflow tools are registered, locally green, and validated against the hero HAPI path.
 
 ### Block 3 · Evening (4h) — orchestrator + e2e + PO publish + README
 
@@ -79,11 +79,11 @@ These are pass/fail. If any one is red at submit time, we don't get judged.
 
 ### D5 EOD gate (must be true before sleep)
 
-- ✅ Three Featherless visit-workflow tools work independently against the loaded hero patient
-- ✅ Orchestrator runs end-to-end with full trace
-- ✅ Both URLs (featherless `/mcp`, orchestrator `/.well-known/agent-card.json`) register cleanly in a fresh PO workspace
-- ✅ Devpost draft submitted
-- ✅ README at 80%
+- [x] Three Featherless visit-workflow tools work independently against the loaded hero patient
+- [ ] Orchestrator runs end-to-end with full trace
+- [ ] Both URLs (featherless `/mcp`, orchestrator `/.well-known/agent-card.json`) register cleanly in a fresh PO workspace
+- [ ] Devpost draft submitted
+- [ ] README at 80%
 
 If any of these is red → record an *insurance* rough-cut video tonight even if hideous. Same rule as the original D3 plan.
 
