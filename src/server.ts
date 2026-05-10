@@ -1,3 +1,5 @@
+import { MemoryClient } from "./clients/memory-client.ts";
+import type { Env } from "./env.ts";
 /**
  * Featherless MCP server — SHARP-on-MCP compliant FHIR R4 server on Cloudflare Workers.
  *
@@ -9,14 +11,13 @@
  * scope advertisement, mirroring `sharp-fhir-mcp`.
  */
 import { McpServer } from "./mcp/server.ts";
-import type { Env } from "./env.ts";
-import { registerFhirTools } from "./tools/fhir.ts";
-import { registerClinicalTools } from "./tools/clinical.ts";
-import { registerLabImagingTools } from "./tools/lab-imaging.ts";
 import { registerClinicalContextTools } from "./tools/clinical-context.ts";
-import { registerVisualizationTools } from "./tools/visualization.ts";
+import { registerClinicalVisitContextTools } from "./tools/clinical-visit-context.ts";
+import { registerClinicalTools } from "./tools/clinical.ts";
+import { registerFhirTools } from "./tools/fhir.ts";
+import { registerLabImagingTools } from "./tools/lab-imaging.ts";
 import { registerMemoryTools } from "./tools/memory.ts";
-import { MemoryClient } from "./clients/memory-client.ts";
+import { registerVisualizationTools } from "./tools/visualization.ts";
 
 export const SERVER_NAME = "featherless";
 export const SERVER_VERSION = "0.1.0";
@@ -65,6 +66,7 @@ export function buildServer(env: Env): McpServer {
   registerLabImagingTools(server);
   registerClinicalContextTools(server);
   registerVisualizationTools(server);
+  registerClinicalVisitContextTools(server);
 
   const memory = MemoryClient.fromEnv(env);
   registerMemoryTools(server, memory);
