@@ -1,3 +1,7 @@
+<p align="center">
+  <img width="320" height="400" alt="featherless" src="https://github.com/user-attachments/assets/4cff0f18-e1fd-40d5-9b2a-f9afa45ced89" />
+</p>
+
 # Featherless
 
 Featherless turns the current FHIR visit into a plain-language patient packet and a care-team closure bundle through three reusable MCP tools and one A2A orchestrator on Cloudflare Workers.
