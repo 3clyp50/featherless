@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "featherless-orchestrator",
+  "main": "orchestrator/src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "FEATHERLESS_MCP_URL": "http://127.0.0.1:8787/mcp",
+    "FHIR_EXTENSION_URI": "https://app.promptopinion.ai/schemas/a2a/v1/fhir-context",
+    "MCP_CALL_TIMEOUT_MS": "10000"
+  }
+}

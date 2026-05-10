@@ -13,6 +13,11 @@ export interface Env {
   MEM0_DISABLED?: string; // "1" disables memory tool registration
   LLM_MODEL?: string;
   WRITE_BACK?: string; // "1" allows selected tools to PUT generated FHIR resources
+  FEATHERLESS_MCP_URL?: string; // Orchestrator target MCP endpoint
+  ORCHESTRATOR_URL?: string; // Public base URL advertised in the A2A AgentCard
+  FHIR_EXTENSION_URI?: string; // Prompt Opinion A2A FHIR-context metadata key
+  ORCHESTRATOR_API_KEY?: string; // Optional X-API-Key gate for A2A POST /
+  MCP_CALL_TIMEOUT_MS?: string; // Orchestrator downstream MCP call timeout
 
   // Dev-only fallback FHIR context (only consulted when FEATHERLESS_DEV_MODE=1)
   FHIR_SERVER_URL?: string;
