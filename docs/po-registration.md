@@ -49,7 +49,23 @@ npm run deploy:orchestrator
 5. Continue through the handshake.
 6. Confirm the server name is `featherless`.
 7. Confirm the FHIR context extension appears: `ai.promptopinion/fhir-context`.
-8. Accept the requested patient scopes for synthetic demo data.
+8. Enable the Prompt Opinion FHIR context extension.
+9. Keep `Selective Permissions` selected.
+10. Accept the requested patient scopes for synthetic demo data:
+   - `patient/Patient.rs`
+   - `patient/AllergyIntolerance.rs`
+   - `patient/Appointment.rs`
+   - `patient/Condition.rs`
+   - `patient/Coverage.rs`
+   - `patient/DiagnosticReport.rs`
+   - `patient/DocumentReference.rs`
+   - `patient/Encounter.rs`
+   - `patient/Immunization.rs`
+   - `patient/MedicationRequest.rs`
+   - `patient/MedicationStatement.rs`
+   - `patient/Observation.rs`
+   - `patient/Procedure.rs`
+11. Save the MCP server configuration.
 
 Expected result: Prompt Opinion can list MCP tools including:
 
