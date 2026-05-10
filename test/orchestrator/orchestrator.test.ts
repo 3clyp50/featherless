@@ -54,7 +54,7 @@ const packetOutput: PatientPacketOutput = {
     unknown_doses: [],
   },
   provider: "workers_ai",
-  model: "@cf/moonshotai/kimi-k2.6",
+  model: "@cf/openai/gpt-oss-120b",
   generated_at: "2026-05-10T00:00:00.000Z",
 };
 

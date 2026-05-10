@@ -10,7 +10,7 @@
     "FEATHERLESS_DEV_MODE": "0",
     "MEM0_DISABLED": "1",
     "WRITE_BACK": "0",
-    "LLM_MODEL": "@cf/moonshotai/kimi-k2.6"
+    "LLM_MODEL": "@cf/openai/gpt-oss-120b"
   },
   "ai": { "binding": "AI" }
 }

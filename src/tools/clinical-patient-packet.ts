@@ -33,7 +33,40 @@ interface GeneratePatientPacketOpts {
   now?: () => Date;
 }
 
-const DEFAULT_WORKERS_AI_MODEL = "@cf/moonshotai/kimi-k2.6";
+const DEFAULT_WORKERS_AI_MODEL = "@cf/openai/gpt-oss-120b";
+
+function contentPartToText(part: unknown): string {
+  if (typeof part === "string") return part;
+  if (!part || typeof part !== "object") return "";
+  const dict = part as Dict;
+  return typeof dict.text === "string" ? dict.text : "";
+}
+
+function contentToText(content: unknown): string | null {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    const text = content.map(contentPartToText).join("").trim();
+    return text.length > 0 ? text : null;
+  }
+  return null;
+}
+
+function workersAiText(result: unknown): string | null {
+  if (typeof result === "string") return result;
+  if (!result || typeof result !== "object") return null;
+  const dict = result as Dict;
+  const direct = contentToText(dict.response ?? dict.text ?? dict.output_text ?? dict.output);
+  if (direct) return direct;
+  if (!Array.isArray(dict.choices)) return null;
+  const [choice] = dict.choices;
+  if (!choice || typeof choice !== "object") return null;
+  const choiceDict = choice as Dict;
+  const message = choiceDict.message;
+  if (message && typeof message === "object") {
+    return contentToText((message as Dict).content);
+  }
+  return contentToText(choiceDict.text);
+}
 
 interface PacketLabels {
   titlePrefix: string;
@@ -282,8 +315,12 @@ export function workersAiClientFromEnv(env: Env): LlmClient | null {
           { role: "system", content: request.system },
           { role: "user", content: request.user },
         ],
-      })) as { response?: string } | string | null | undefined;
-      const text = typeof result === "string" ? result : result?.response;
+        response_format: { type: "json_object" },
+        chat_template_kwargs: { thinking: false, clear_thinking: true },
+        max_completion_tokens: 1800,
+        temperature: 0.2,
+      })) as unknown;
+      const text = workersAiText(result);
       if (!text) throw new Error("workers_ai_error:empty_response");
       return { model, text };
     },

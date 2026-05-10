@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildTemplatePatientPacket,
   generatePatientPacket,
+  workersAiClientFromEnv,
 } from "../../src/tools/clinical-patient-packet.ts";
 import { validateGrounding } from "../../src/tools/grounding-validator.ts";
 import { patientPacketOutputSchema } from "../../src/tools/schemas/patient-packet.ts";
@@ -150,6 +151,21 @@ describe("clinical_generate_patient_packet", () => {
     const parsed = patientPacketOutputSchema.safeParse(output);
     expect(calls).toBe(2);
     expect(parsed.success, parsed.success ? "" : JSON.stringify(parsed.error.format())).toBe(true);
+  });
+
+  it("reads OpenAI-compatible Workers AI choices responses", async () => {
+    const client = workersAiClientFromEnv({
+      AI: {
+        async run() {
+          return {
+            choices: [{ message: { role: "assistant", content: '{"ok":true}' } }],
+          };
+        },
+      } as unknown as Ai,
+      LLM_MODEL: "@cf/test/choices",
+    });
+    const response = await client?.generate({ system: "system", user: "user" });
+    expect(response).toEqual({ model: "@cf/test/choices", text: '{"ok":true}' });
   });
 
   it("rejects tampered unsupported quotes and unknown doses", () => {
