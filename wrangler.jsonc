@@ -8,7 +8,8 @@
   "vars": {
     "SHARP_STRICT_CONTEXT": "0",
     "FEATHERLESS_DEV_MODE": "0",
-    "MEM0_DISABLED": "0"
+    "MEM0_DISABLED": "0",
+    "LLM_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
   },
   "ai": { "binding": "AI" },
   "vectorize": [

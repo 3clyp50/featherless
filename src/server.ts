@@ -12,6 +12,7 @@ import type { Env } from "./env.ts";
  */
 import { McpServer } from "./mcp/server.ts";
 import { registerClinicalContextTools } from "./tools/clinical-context.ts";
+import { registerClinicalPatientPacketTools } from "./tools/clinical-patient-packet.ts";
 import { registerClinicalVisitContextTools } from "./tools/clinical-visit-context.ts";
 import { registerClinicalTools } from "./tools/clinical.ts";
 import { registerFhirTools } from "./tools/fhir.ts";
@@ -67,6 +68,7 @@ export function buildServer(env: Env): McpServer {
   registerClinicalContextTools(server);
   registerVisualizationTools(server);
   registerClinicalVisitContextTools(server);
+  registerClinicalPatientPacketTools(server, env);
 
   const memory = MemoryClient.fromEnv(env);
   registerMemoryTools(server, memory);

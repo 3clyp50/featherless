@@ -101,7 +101,7 @@ This is a stretch on the timeline. The plan in §6 is the only way it lands.
 
 | Question | Choice | Why |
 |---|---|---|
-| LLM for patient packet | **Provider-agnostic LLM adapter** via Worker `fetch`; initial providers selected by `LLM_PROVIDER` / `LLM_MODEL`; prompt caching used only when the selected provider supports it | Keeps Featherless portable across hosted LLMs and Workers-native models while preserving reliable Spanish at grade-6 reading level. |
+| LLM for patient packet | **Cloudflare Workers AI** through the existing `AI` binding, with `LLM_MODEL` selecting the model | Keeps patient context inside the Cloudflare Worker boundary, avoids third-party LLM API keys, and strengthens the healthcare safety story. |
 | FHIR write-back posture | **Emit resources as JSON; do NOT POST by default**; `WRITE_BACK=1` env flag enables PUT to HAPI | HAPI public sandbox is read-only/flaky; local HAPI Docker is fine but risky to demo over network. The point is the *resources are correct*, not that they ship. |
 | Reading-level metrics | Implement Flesch-Kincaid (English) + INFLESZ / Szigriszt-Pazos (Spanish) inline (~60 LOC total) | No reliable npm dep on Workers; hand-roll is shorter than picking and patching one. |
 | Hero patient | **Hand-crafted FHIR bundle for María Garcia**, posted to local HAPI Docker once | Synthea is overkill; hand-crafting matches `../HERO_PATIENT.md` §1–§5 verbatim. |
@@ -148,7 +148,7 @@ Migrated verbatim where possible from `../DECISIONS.md` D-002. Any change is ann
 1. ~~**PO Agent registration shape unknown for an external Worker.**~~ **Resolved 2026-05-10** — PO accepts external A2A agents via agent-card URL, MCP servers via URL + `initialize` extension. No PO-proprietary manifest. See [`agents/S-po-manifest-spike/DECISION.md`](agents/S-po-manifest-spike/DECISION.md).
 
    **1' (replacement risk) · A2A protocol surface must be hand-rolled on Workers.** The reference `po-adk-typescript` SDK uses Express + `@a2a-js/sdk`, neither of which runs on Cloudflare Workers. *Mitigation:* implement the minimum A2A surface directly on Hono — `GET /.well-known/agent-card.json` (static JSON) and `POST /` with a JSON-RPC dispatcher for one method (`message/send`). Estimated ~150 LOC. If spec compliance fails the PO add-agent flow, fall back to deploying the reference SDK on Cloud Run as a third deployable and proxy from the Worker (loses the all-edge claim; preserves the A2A claim).
-2. **LLM provider key in a Worker.** *Mitigation:* configure the selected provider key as a Worker secret (for example `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`). Never logged. Never returned to the client. Demo uses our key; production buyers swap their own provider and model.
+2. **LLM execution boundary.** *Mitigation:* patient packet generation uses Workers AI through the Worker `AI` binding, not third-party LLM API calls. No external LLM key is stored, logged, or returned.
 3. **Local HAPI Docker on demo day.** *Mitigation:* record video against a *known-good* local instance with the bundle pre-loaded; bundle ships in `scripts/hero-bundle.json` so any judge can reload deterministically.
 4. **Citation grounding hallucination.** *Mitigation:* post-generation validator that rejects any phrase ≥6 words not appearing in either the chart or `CITATIONS.md`. Reject → regenerate once → fail loudly.
 5. **Reading-level miss (FK > 7 or INFLESZ < 65).** *Mitigation:* generator regenerates with stricter system-prompt constraints up to 2 retries, then fails loudly. The metric is reported in the output regardless.

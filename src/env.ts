@@ -11,6 +11,7 @@ export interface Env {
   SHARP_STRICT_CONTEXT?: string; // "1" enables strict mode
   FEATHERLESS_DEV_MODE?: string; // "1" enables env-var fallback in context.ts
   MEM0_DISABLED?: string; // "1" disables memory tool registration
+  LLM_MODEL?: string;
 
   // Dev-only fallback FHIR context (only consulted when FEATHERLESS_DEV_MODE=1)
   FHIR_SERVER_URL?: string;

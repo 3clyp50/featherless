@@ -56,10 +56,10 @@ These are pass/fail. If any one is red at submit time, we don't get judged.
 
 **Scopes:** `S-tool2-patient-packet` · `S-tool3-care-team-closure` (can run in parallel — different writable surfaces, no shared state)
 
-- [ ] **04:00** [human only] configure the selected LLM provider secret (for example `wrangler secret put ANTHROPIC_API_KEY` or `OPENAI_API_KEY`). Verify with a `/health/llm` ping endpoint (remove before deploy). Subagents do not handle secrets.
-- [ ] **04:15** [`S-tool2-patient-packet`] Build **`src/tools/clinical-patient-packet.ts`** — input: visit context + `preferred_language` + `reading_level_target`; calls the configured provider through a provider-agnostic Worker `fetch` adapter; output schema in `src/tools/schemas/patient-packet.ts`. System prompt embeds `../CITATIONS.md` allow-list (CIT-001 through CIT-010). Registered tool: `clinical_generate_patient_packet`.
-- [ ] **05:30** [`S-tool2-patient-packet`] Reading-level metrics inline: Flesch-Kincaid (English) + Szigriszt-Pazos / INFLESZ (Spanish), ~30 LOC each in `src/tools/readability.ts`. Unit-test against known sentences.
-- [ ] **06:00** [`S-tool2-patient-packet`] Citation-grounding validator: any direct quote ≥6 words must appear in chart or allow-list source text. Reject → regenerate once → fail loudly. Unit-tested with one passing and one tampered output.
+- [ ] **04:00** [human only] verify the Cloudflare Workers AI binding and `LLM_MODEL` in `wrangler.jsonc`. No external LLM provider secret is used.
+- [x] ~~**04:15** [`S-tool2-patient-packet`] Build **`src/tools/clinical-patient-packet.ts`**~~ **DONE** — `clinical_generate_patient_packet` uses Workers AI via the Worker `AI` binding, returns packet markdown + structured content, and avoids external LLM provider keys.
+- [x] ~~**05:30** [`S-tool2-patient-packet`] Reading-level metrics inline~~ **DONE** — `src/tools/readability.ts` reports Flesch-Kincaid and INFLESZ; unit tests cover English and Spanish targets.
+- [x] ~~**06:00** [`S-tool2-patient-packet`] Citation-grounding validator~~ **DONE** — validator checks allowed citations, unsupported quoted phrases, and unknown dose strings; tests cover passing packet generation and tampered rejection.
 - [ ] **06:30** [`S-tool3-care-team-closure`] Build **`src/tools/clinical-care-team-closure.ts`** — emits 3 `Task` + 1 `CommunicationRequest` + 1 `DocumentReference` from visit context. R4-validate via the FHIR `$validate` operation against local HAPI. `WRITE_BACK=1` env flag PUTs them; default off. Registered tool: `clinical_prepare_care_team_closure`.
 - [ ] **07:30** [`S-tool3-care-team-closure`] Vitest unit tests for tool 3. Validate JSON shape, statuses, `intent`, and `for.reference` chaining to the patient.
 - [ ] **07:45** [judge] Merge S-tool2 + S-tool3; run typecheck + lint + tests; tag `d5-tools-green`.
@@ -147,7 +147,7 @@ If any of these is red → record an *insurance* rough-cut video tonight even if
 Only one of these can be true. Pick the lowest-risk path that's still green at the time of decision.
 
 - **If by D5 18:00 local** the orchestrator isn't routing SHARP headers correctly → collapse to single-Worker `/orchestrate` route in featherless. Update PLAN §3 + S3 sentence. Lose ~10% of Tripathi's claim, gain 4h.
-- **If by D5 22:00 local** the configured LLM provider is flaky → switch provider adapter to Workers AI Llama 3.3 70B for English only; Spanish becomes a stretch goal documented in BACKLOG. Update Hickey's sentence to "ships English packet today, Spanish in BACKLOG."
+- **If by D5 22:00 local** Workers AI output is flaky → switch to template-first Spanish packet generation with Workers AI only for final wording polish; English becomes the control path. Document any limitation in BACKLOG.
 - **If by D5 EOD** any of {patient packet generates, hero bundle loads, both URLs register in PO} is red → ship the *substrate* + a single demo tool + a manual demo script. Reframe as "Featherless v0.1 — substrate shipped, visit workflow partial, orchestrator in BACKLOG." This is the worst-case but still a real submission.
 - **Never** attempt a fourth tool, a second hero patient, or a v2 architecture after D5 12:00. Ship what works.
 
