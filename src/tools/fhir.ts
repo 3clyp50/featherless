@@ -8,6 +8,25 @@ import type { McpServer } from "../mcp/server.ts";
 import { ResourceTypeSchema } from "../models/types.ts";
 import { checkFhirContext, fhirClientForCurrentContext, resolvePatientId } from "./_helpers.ts";
 
+async function searchReadFallback(
+  fhir: ReturnType<typeof fhirClientForCurrentContext>,
+  resourceType: string,
+  resourceId: string,
+): Promise<Record<string, unknown>> {
+  const params: Record<string, string> = { _id: resourceId, _count: "1" };
+  const patientId = resolvePatientId();
+  if (patientId && resourceType !== "Patient") params.patient = patientId;
+  const bundle = await fhir.search(resourceType, params);
+  const resource = bundleToResources(bundle)[0];
+  if (resource) return resource;
+  return {
+    error: "resource_not_found",
+    resource_type: resourceType,
+    resource_id: resourceId,
+    message: `No ${resourceType}/${resourceId} found by direct read or search fallback.`,
+  };
+}
+
 export function registerFhirTools(server: McpServer): void {
   server.tool(
     "fhir_get_capability_statement",
@@ -141,7 +160,23 @@ export function registerFhirTools(server: McpServer): void {
         const fhir = fhirClientForCurrentContext();
         return await fhir.getResource(resource_type, resource_id);
       } catch (e) {
+        if (resource_type === "DocumentReference") {
+          try {
+            const fhir = fhirClientForCurrentContext();
+            return await searchReadFallback(fhir, resource_type, resource_id);
+          } catch {
+            // Preserve the original error below.
+          }
+        }
         if (e instanceof FHIRError) return e.toToolResponse();
+        if (resource_type === "DocumentReference") {
+          return {
+            error: "fhir_read_failed",
+            resource_type,
+            resource_id,
+            message: e instanceof Error ? e.message : String(e),
+          };
+        }
         throw e;
       }
     },

@@ -1,4 +1,4 @@
-import { FHIRError } from "../clients/fhir-client.ts";
+import { type FHIRBundle, FHIRError } from "../clients/fhir-client.ts";
 import { bundleToResources, codingText } from "../fhir-utils.ts";
 /**
  * Visit-scoped clinical context packer — `clinical_pack_visit_context`.
@@ -417,6 +417,21 @@ function caregiverFromText(text: string | undefined): string | undefined {
   return undefined;
 }
 
+function emptyBundle(): FHIRBundle {
+  return { resourceType: "Bundle", type: "searchset", total: 0, entry: [] };
+}
+
+async function optionalClinicalBundle(loader: () => Promise<FHIRBundle>): Promise<FHIRBundle> {
+  try {
+    return await loader();
+  } catch (e) {
+    if (e instanceof FHIRError && (e.statusCode === 401 || e.statusCode === 403)) {
+      return emptyBundle();
+    }
+    throw e;
+  }
+}
+
 async function packVisitContext(args: VisitContextInput): Promise<VisitContext | Dict> {
   const err = checkFhirContext({ requirePatient: true, patientId: args.patient_id });
   if (err) return err as unknown as Dict;
@@ -440,9 +455,9 @@ async function packVisitContext(args: VisitContextInput): Promise<VisitContext |
         include_alerts: false,
         include_raw_resources: true,
       }),
-      fhir.search("ServiceRequest", { patient: pid, _count: 50 }),
-      fhir.getAppointments(pid, { count: 25 }),
-      fhir.getDocumentReferences(pid, { count: 25 }),
+      optionalClinicalBundle(() => fhir.search("ServiceRequest", { patient: pid, _count: 50 })),
+      optionalClinicalBundle(() => fhir.getAppointments(pid, { count: 25 })),
+      optionalClinicalBundle(() => fhir.getDocumentReferences(pid, { count: 25 })),
     ]);
 
   if (aggregateResult && typeof aggregateResult === "object" && "error" in aggregateResult) {

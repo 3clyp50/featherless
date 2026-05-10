@@ -59,16 +59,77 @@ function encounterRef(ctx: VisitContext): Dict {
   return { reference: `Encounter/${ctx.encounter.id}` };
 }
 
+function idSlug(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "order"
+  );
+}
+
+function timingDueDate(
+  encounterDate: string,
+  timing: string | null | undefined,
+): string | undefined {
+  if (!timing) return undefined;
+  const text = timing.toLowerCase();
+  const match = /(\d+)\s*(day|days|week|weeks|month|months)/.exec(text);
+  if (!match) return undefined;
+  const amount = Number.parseInt(match[1] ?? "", 10);
+  if (!Number.isFinite(amount) || amount <= 0) return undefined;
+  const unit = match[2] ?? "days";
+  const days = unit.startsWith("month")
+    ? amount * 30
+    : unit.startsWith("week")
+      ? amount * 7
+      : amount;
+  return addDays(encounterDate, days);
+}
+
+function ownerForOrder(order: VisitContext["orders"][number]): string {
+  switch (order.type) {
+    case "lab":
+      return "Lab scheduling";
+    case "imaging":
+      return "Radiology scheduling";
+    case "appointment":
+      return "Front desk scheduling";
+    default:
+      return "Care team";
+  }
+}
+
+function taskDescriptionForOrder(order: VisitContext["orders"][number]): string {
+  const display = order.display.trim() || "Follow-up order";
+  if (/^(arrange|book|order|repeat|schedule)\b/i.test(display)) return display;
+  return `Schedule ${display}`;
+}
+
+function taskIdForOrder(
+  ctx: VisitContext,
+  order: VisitContext["orders"][number],
+  description: string,
+  index: number,
+): string {
+  const encounter = idSlug(ctx.encounter.id).slice(0, 24) || "encounter";
+  const suffix = `${idSlug(order.type)}-${index + 1}`;
+  const reserved = `task-${encounter}-${suffix}`.length + 1;
+  const descriptionPart = idSlug(description).slice(0, Math.max(0, 64 - reserved));
+  return ["task", encounter, descriptionPart, suffix].filter(Boolean).join("-");
+}
+
 function task(
   id: string,
   ctx: VisitContext,
   opts: {
     description: string;
     owner: string;
-    due: string;
+    due?: string;
   },
 ): Dict {
-  return {
+  const out: Dict = {
     resourceType: "Task",
     id,
     status: "requested",
@@ -80,10 +141,22 @@ function task(
     authoredOn: `${ctx.encounter.date}T12:00:00Z`,
     requester: { display: ctx.encounter.provider ?? "Care team" },
     owner: { display: opts.owner },
-    restriction: {
-      period: { end: opts.due },
-    },
   };
+  if (opts.due) out.restriction = { period: { end: opts.due } };
+  return out;
+}
+
+function taskFromOrder(
+  ctx: VisitContext,
+  order: VisitContext["orders"][number],
+  index: number,
+): Dict {
+  const description = taskDescriptionForOrder(order);
+  return task(taskIdForOrder(ctx, order, description, index), ctx, {
+    description,
+    owner: ownerForOrder(order),
+    due: timingDueDate(ctx.encounter.date, order.timing),
+  });
 }
 
 export function buildCareTeamClosureResources(
@@ -94,27 +167,13 @@ export function buildCareTeamClosureResources(
   const encounterId = ctx.encounter.id;
   const encounterDate = validDateOnly(ctx.encounter.date) ?? new Date().toISOString().slice(0, 10);
   const closureCtx: VisitContext = { ...ctx, encounter: { ...ctx.encounter, date: encounterDate } };
-  const labDue = addDays(encounterDate, 14);
-  const checkInDue = addDays(encounterDate, 7);
-  const eightWeekDue = addDays(encounterDate, 56);
   const generated = `${encounterDate}T12:00:00Z`;
+  const orderTasks = closureCtx.orders.map((order, index) =>
+    taskFromOrder(closureCtx, order, index),
+  );
 
   return [
-    task(`task-${encounterId}-labs`, closureCtx, {
-      description: "Schedule BMP + BNP draw",
-      owner: "Lab scheduling",
-      due: labDue,
-    }),
-    task(`task-${encounterId}-echo`, closureCtx, {
-      description: "Schedule echocardiogram",
-      owner: "Radiology scheduling",
-      due: eightWeekDue,
-    }),
-    task(`task-${encounterId}-nurse-call`, closureCtx, {
-      description: "Nurse check-in call to patient",
-      owner: "Cardiology nurse",
-      due: checkInDue,
-    }),
+    ...orderTasks,
     {
       resourceType: "CommunicationRequest",
       id: `commreq-${encounterId}-patient-packet`,
@@ -260,7 +319,7 @@ export function registerClinicalCareTeamClosureTools(server: McpServer, env: Env
   server.tool(
     "clinical_prepare_care_team_closure",
     "Prepare standards-shaped FHIR closure resources for a completed visit: " +
-      "3 Task resources, 1 draft CommunicationRequest proposal, and 1 DocumentReference. " +
+      "Task resources for explicit follow-up orders, 1 draft CommunicationRequest proposal, and 1 DocumentReference. " +
       "Validates each resource against the configured FHIR server and only writes back when WRITE_BACK=1.",
     careTeamClosureInputSchema,
     async (args) => prepareCareTeamClosure(args, env),

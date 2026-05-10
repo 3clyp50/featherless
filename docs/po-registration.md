@@ -65,6 +65,7 @@ npm run deploy:orchestrator
    - `patient/MedicationStatement.rs`
    - `patient/Observation.rs`
    - `patient/Procedure.rs`
+   - `patient/ServiceRequest.rs`
 11. Save the MCP server configuration.
 
 Expected result: Prompt Opinion can list MCP tools including:
@@ -95,7 +96,7 @@ Expected response:
 - Spanish patient packet markdown.
 - Readability metrics with `provider: workers_ai`.
 - Grounding result.
-- Five closure resources: three `Task`, one draft `CommunicationRequest` proposal, one `DocumentReference`.
+- Closure resources: one `Task` per explicit follow-up order, one draft `CommunicationRequest` proposal, one `DocumentReference`. Visits without orders should not produce invented follow-up tasks.
 - Trace with the three MCP hops and non-zero timings.
 
 Important: local HAPI at `127.0.0.1:8080` is for tests only. The deployed Workers must receive a FHIR context whose `fhirUrl` is reachable from Cloudflare. Use Prompt Opinion's workspace FHIR server if it can host the synthetic patient, or load the hero bundle into an HTTPS-reachable synthetic HAPI instance:

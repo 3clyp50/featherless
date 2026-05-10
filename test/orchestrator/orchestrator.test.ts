@@ -260,7 +260,7 @@ describe("Featherless A2A orchestrator", () => {
     };
     expect(envelope.result.patient_id).toBe(heroVisitContext.patient.id);
     expect(envelope.result.packet_markdown).toContain("# Su plan");
-    expect(envelope.result.closure_resources.length).toBe(5);
+    expect(envelope.result.closure_resources.length).toBe(6);
     expect(envelope.trace.map((h) => h.tool)).toEqual(calls.map((c) => c.tool));
     expect(envelope.trace.every((h) => h.ok && h.ms > 0)).toBe(true);
     expect(envelope.errors).toEqual([]);

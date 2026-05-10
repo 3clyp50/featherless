@@ -43,6 +43,7 @@ const PO_FHIR_CONTEXT_EXTENSION = {
     { name: "patient/Immunization.rs" },
     { name: "patient/DiagnosticReport.rs" },
     { name: "patient/Procedure.rs" },
+    { name: "patient/ServiceRequest.rs" },
     { name: "patient/Encounter.rs" },
     { name: "patient/Appointment.rs" },
     { name: "patient/DocumentReference.rs" },

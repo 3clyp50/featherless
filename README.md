@@ -66,7 +66,7 @@ Two deployables make the boundaries visible: one MCP server for reusable clinica
 |---|---|---|
 | `clinical_pack_visit_context` | `src/tools/clinical-visit-context.ts` | Reads patient, encounter, problems, medications, orders, vitals, labs, and visit summary into a typed payload. |
 | `clinical_generate_patient_packet` | `src/tools/clinical-patient-packet.ts` | Uses Workers AI to generate patient-facing packet markdown; reports FK and INFLESZ readability; validates grounding. |
-| `clinical_prepare_care_team_closure` | `src/tools/clinical-care-team-closure.ts` | Emits three `Task` resources, one draft `CommunicationRequest` proposal, and one `DocumentReference`; validates through FHIR `$validate`. |
+| `clinical_prepare_care_team_closure` | `src/tools/clinical-care-team-closure.ts` | Emits `Task` resources only for explicit follow-up orders, plus one draft `CommunicationRequest` proposal and one `DocumentReference`; validates through FHIR `$validate`. |
 
 ## 6. A2A Orchestrator
 

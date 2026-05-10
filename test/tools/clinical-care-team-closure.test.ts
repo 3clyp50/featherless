@@ -52,9 +52,10 @@ describe("clinical_prepare_care_team_closure", () => {
     expect(tools.map((t) => t.name)).toContain("clinical_prepare_care_team_closure");
   });
 
-  it("builds 3 Task + 1 CommunicationRequest + 1 DocumentReference resources", () => {
+  it("builds one Task per explicit order plus CommunicationRequest and DocumentReference", () => {
     const resources = buildCareTeamClosureResources(heroVisitContext, "packet");
     expect(resources.map((r) => r.resourceType)).toEqual([
+      "Task",
       "Task",
       "Task",
       "Task",
@@ -62,7 +63,13 @@ describe("clinical_prepare_care_team_closure", () => {
       "DocumentReference",
     ]);
     const tasks = resources.filter((r) => r.resourceType === "Task");
-    expect(tasks.length).toBe(3);
+    expect(tasks.length).toBe(heroVisitContext.orders.length);
+    expect(tasks.map((t) => t.description)).toEqual([
+      "Schedule BMP",
+      "Schedule BNP",
+      "Schedule Echocardiogram",
+      "Schedule Cardiology follow-up",
+    ]);
     for (const t of tasks) {
       expect(t.status).toBe("requested");
       expect(t.intent).toBe("order");
@@ -72,6 +79,41 @@ describe("clinical_prepare_care_team_closure", () => {
     expect(comm?.status).toBe("draft");
     expect(comm?.intent).toBe("proposal");
     expect((comm?.subject as { reference?: string }).reference).toBe(`Patient/${HERO_PATIENT}`);
+  });
+
+  it("does not invent clinical follow-up tasks when the visit context has no orders", () => {
+    const resources = buildCareTeamClosureResources(
+      {
+        ...heroVisitContext,
+        orders: [],
+        clinician_summary: "Patient was seen for viral sinusitis. No orders were placed.",
+      },
+      "packet",
+    );
+    expect(resources.map((r) => r.resourceType)).toEqual([
+      "CommunicationRequest",
+      "DocumentReference",
+    ]);
+    expect(JSON.stringify(resources)).not.toMatch(/BMP|BNP|echocardiogram|nurse check-in/i);
+  });
+
+  it("keeps generated Task ids within the FHIR id length limit", () => {
+    const resources = buildCareTeamClosureResources({
+      ...heroVisitContext,
+      encounter: {
+        ...heroVisitContext.encounter,
+        id: "658a0aac-ef62-4d75-bc7f-aa50dcd3fa97",
+      },
+      orders: [
+        {
+          type: "appointment",
+          display: "Complex multispecialty follow-up appointment with a very long display",
+          timing: "8 weeks",
+        },
+      ],
+    });
+    const task = resources.find((r) => r.resourceType === "Task");
+    expect(String(task?.id ?? "")).toHaveLength(64);
   });
 
   it("uses today's date when the encounter date is missing or invalid", () => {
@@ -96,11 +138,13 @@ describe("clinical_prepare_care_team_closure", () => {
           `${baseDate}T12:00:00Z`,
           `${baseDate}T12:00:00Z`,
           `${baseDate}T12:00:00Z`,
+          `${baseDate}T12:00:00Z`,
         ]);
         expect(dueDates).toEqual([
           addDays(baseDate, 14),
+          addDays(baseDate, 14),
           addDays(baseDate, 56),
-          addDays(baseDate, 7),
+          addDays(baseDate, 56),
         ]);
       }
     } finally {
@@ -124,8 +168,8 @@ describe("clinical_prepare_care_team_closure", () => {
     const parsed = careTeamClosureOutputSchema.safeParse(result.structuredContent);
     expect(parsed.success, parsed.success ? "" : JSON.stringify(parsed.error.format())).toBe(true);
     if (!parsed.success) return;
-    expect(parsed.data.resources.length).toBe(5);
-    expect(parsed.data.validation_results.length).toBe(5);
+    expect(parsed.data.resources.length).toBe(6);
+    expect(parsed.data.validation_results.length).toBe(6);
     expect(parsed.data.validation_results.every((v) => v.ok)).toBe(true);
     expect(parsed.data.write_back_requested).toBe(false);
     expect(parsed.data.write_back_enabled).toBe(false);
