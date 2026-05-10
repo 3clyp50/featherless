@@ -79,6 +79,18 @@ export interface AggregateClinicalContextOpts {
   vitals_lookback_days?: number;
   encounter_lookback_days?: number;
   include_alerts?: boolean;
+  include_raw_resources?: boolean;
+}
+
+export interface ClinicalContextRawResources {
+  patient: Dict;
+  allergies: Dict[];
+  medication_requests: Dict[];
+  conditions: Dict[];
+  immunizations: Dict[];
+  labs: Dict[];
+  vitals: Dict[];
+  encounters: Dict[];
 }
 
 export interface ClinicalContextAggregate {
@@ -103,6 +115,7 @@ export interface ClinicalContextAggregate {
   };
   alerts?: Dict[];
   partial_errors?: Record<string, string>;
+  raw_resources?: ClinicalContextRawResources;
 }
 
 /**
@@ -120,6 +133,7 @@ export async function aggregateClinicalContext(
     vitals_lookback_days = 365,
     encounter_lookback_days = 365,
     include_alerts = true,
+    include_raw_resources = false,
   } = opts;
 
   const err = checkFhirContext({ requirePatient: true, patientId: patient_id });
@@ -160,13 +174,21 @@ export async function aggregateClinicalContext(
   const [patientR, allergiesR, medsR, problemsR, immsR, labsR, vitalsR, encountersR] = settled;
 
   const patient = patientR.status === "fulfilled" ? (patientR.value as Dict) : {};
-  const allergies = safeResources(allergiesR).map(allergySummary);
-  const medications = safeResources(medsR).map(medicationRequestSummary);
-  const problems = safeResources(problemsR).map(conditionSummary);
-  const immunizations = safeResources(immsR).map(immunizationSummary);
-  const labs = safeResources(labsR).map(observationSummary);
-  const vitals = safeResources(vitalsR).map(observationSummary);
-  const encounters = safeResources(encountersR).map(encounterSummary);
+  const allergyResources = safeResources(allergiesR);
+  const medicationResources = safeResources(medsR);
+  const problemResources = safeResources(problemsR);
+  const immunizationResources = safeResources(immsR);
+  const labResources = safeResources(labsR);
+  const vitalResources = safeResources(vitalsR);
+  const encounterResources = safeResources(encountersR);
+
+  const allergies = allergyResources.map(allergySummary);
+  const medications = medicationResources.map(medicationRequestSummary);
+  const problems = problemResources.map(conditionSummary);
+  const immunizations = immunizationResources.map(immunizationSummary);
+  const labs = labResources.map(observationSummary);
+  const vitals = vitalResources.map(observationSummary);
+  const encounters = encounterResources.map(encounterSummary);
 
   const labels = [
     "patient",
@@ -215,6 +237,18 @@ export async function aggregateClinicalContext(
   }
   if (Object.keys(partialErrors).length) {
     context.partial_errors = partialErrors;
+  }
+  if (include_raw_resources) {
+    context.raw_resources = {
+      patient,
+      allergies: allergyResources,
+      medication_requests: medicationResources,
+      conditions: problemResources,
+      immunizations: immunizationResources,
+      labs: labResources,
+      vitals: vitalResources,
+      encounters: encounterResources,
+    };
   }
   return context;
 }

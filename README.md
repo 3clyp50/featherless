@@ -148,12 +148,14 @@ npm run dev:orchestrator
 
 ## 13. Prompt Opinion Registration
 
-See `docs/po-registration.md`.
+See `docs/po-registration.md` for the registration flow and `docs/publish-readiness.md` for the final Marketplace/Devpost checklist.
 
 Submission URLs:
 
 - MCP: `<featherless-worker-url>/mcp`
 - A2A AgentCard: `<orchestrator-worker-url>/.well-known/agent-card.json`
+
+The deployed orchestrator uses a Cloudflare service binding named `FEATHERLESS_MCP` to call the deployed MCP Worker. If a different deployment shape cannot use that binding, set `FEATHERLESS_MCP_URL` to the deployed HTTPS MCP endpoint; public loopback targets are rejected.
 
 No `marketplace.yaml` is used for the current Prompt Opinion onboarding path.
 
@@ -169,11 +171,12 @@ Latest local gate:
 
 Known remaining submission tasks:
 
-- Deploy both Workers.
-- Register both URLs in Prompt Opinion.
+- Authenticate Cloudflare and deploy both Workers.
+- Use a synthetic FHIR server reachable from deployed Workers and Prompt Opinion.
+- Register both URLs in Prompt Opinion and publish the configured project to the Marketplace.
 - Capture SHARP proof screenshots.
 - Record the under-3-minute demo video.
-- Submit final Devpost before Monday, 2026-05-11 18:00 Europe/Rome.
+- Submit final Devpost with the Marketplace URL and public video link before Monday, 2026-05-11 18:00 Europe/Rome.
 
 ## License
 

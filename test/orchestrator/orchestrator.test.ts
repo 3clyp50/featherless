@@ -251,6 +251,95 @@ describe("Featherless A2A orchestrator", () => {
     expect(envelope.errors).toEqual([]);
   });
 
+  it("routes MCP calls through the Cloudflare service binding when configured", async () => {
+    const calls: CapturedMcpCall[] = [];
+    const fallbackFetcher = async (): Promise<Response> => {
+      throw new Error("fallback_fetcher_should_not_be_used");
+    };
+    const handler = createOrchestratorHandler({ fetcher: fallbackFetcher });
+    const serviceBinding = { fetch: mockMcpFetcher(calls) };
+    const res = await handler.fetch(
+      new Request("https://agent.example/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "run-service-binding",
+          method: "message/send",
+          params: {
+            message: {
+              role: "user",
+              parts: [{ kind: "text", text: "Generate the visit packet." }],
+              metadata: {
+                [DEFAULT_FHIR_EXTENSION_URI]: {
+                  fhirUrl: "https://synthetic-fhir.example/r4",
+                  fhirToken: "service-token",
+                  patientId: heroVisitContext.patient.id,
+                },
+              },
+            },
+          },
+        }),
+      }),
+      { FEATHERLESS_MCP: serviceBinding },
+      {} as ExecutionContext,
+    );
+
+    expect(res.status).toBe(200);
+    expect(calls).toHaveLength(3);
+    expect(calls.every((call) => call.url === "https://featherless.internal/mcp")).toBe(true);
+  });
+
+  it("fails fast when no deployable MCP target is configured", async () => {
+    const calls: CapturedMcpCall[] = [];
+    const handler = createOrchestratorHandler({ fetcher: mockMcpFetcher(calls) });
+    const baseBody = {
+      jsonrpc: "2.0",
+      id: "run-missing-target",
+      method: "message/send",
+      params: {
+        message: {
+          role: "user",
+          parts: [{ kind: "text", text: "Generate the visit packet." }],
+          metadata: {
+            [DEFAULT_FHIR_EXTENSION_URI]: {
+              fhirUrl: "https://synthetic-fhir.example/r4",
+              fhirToken: "target-token",
+              patientId: heroVisitContext.patient.id,
+            },
+          },
+        },
+      },
+    };
+
+    const missing = await handler.fetch(
+      new Request("https://agent.example/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(baseBody),
+      }),
+      {},
+      {} as ExecutionContext,
+    );
+    const missingRpc = (await missing.json()) as { error: { code: number; message: string } };
+    expect(missingRpc.error.code).toBe(-32000);
+    expect(missingRpc.error.message).toContain("mcp_config_required");
+
+    const loopback = await handler.fetch(
+      new Request("https://agent.example/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(baseBody),
+      }),
+      { FEATHERLESS_MCP_URL: "http://127.0.0.1:8787/mcp" },
+      {} as ExecutionContext,
+    );
+    const loopbackRpc = (await loopback.json()) as { error: { code: number; message: string } };
+    expect(loopbackRpc.error.code).toBe(-32000);
+    expect(loopbackRpc.error.message).toContain("mcp_config_not_deployable");
+    expect(calls).toHaveLength(0);
+  });
+
   it("requires FHIR metadata and honors optional API-key protection", async () => {
     const handler = createOrchestratorHandler({ fetcher: mockMcpFetcher([]) });
     const authFail = await handler.fetch(

@@ -29,7 +29,7 @@ The **judge subagent** merges, runs `pnpm typecheck && pnpm lint && pnpm test`, 
 
 These are pass/fail. If any one is red at submit time, we don't get judged.
 
-- [ ] **PO workspace registration** — featherless MCP URL added under `Configuration → MCP Servers`; orchestrator agent-card URL added under `Agents → External Agents`; both visible in launchpad and invokable. (Replaces "Marketplace publish" — see DECISION.md.)
+- [ ] **PO Marketplace publication** — featherless MCP URL added under `Configuration → MCP Servers`; orchestrator agent-card URL added under `Agents → External Agents`; both visible in launchpad and invokable; configured project published to the Prompt Opinion Marketplace; Marketplace URL copied for Devpost. See [`docs/publish-readiness.md`](docs/publish-readiness.md).
 - [ ] **Platform integration** — orchestrator consultable *from inside* a PO BYO Agent via "Consult with another agent" (not just curl-able at the edge URL)
 - [ ] **Protocol adherence** — MCP server (JSON-RPC over Streamable HTTP, `initialize` declares `ai.promptopinion/fhir-context` extension) + A2A agent (agent card + `message/send`, declares the `https://app.promptopinion.ai/schemas/a2a/v1/fhir-context` extension)
 - [ ] **SHARP context** — `X-FHIR-Server-URL` / `X-FHIR-Access-Token` / `X-Patient-ID` flow proven in logs end-to-end (orchestrator A2A metadata → featherless headers → FHIR); **zero token storage** — verified by inspecting Worker source
@@ -74,6 +74,7 @@ These are pass/fail. If any one is red at submit time, we don't get judged.
 - [x] ~~**10:00** [`S-po-publish-and-readme`] Migrate docs into this folder~~ **DONE** — `HERO_PATIENT.md`, `CITATIONS.md`, `DECISIONS.md`, `BACKLOG.md`, and `LICENSE` now live in `featherless/` and reflect the current TypeScript / Workers AI architecture.
 - [x] ~~**10:15** [`S-po-publish-and-readme`] Write `docs/po-registration.md`~~ **DONE** — judge-facing steps cover the MCP URL, A2A AgentCard URL, FHIR context extension, expected tools, screenshots, and troubleshooting.
 - [x] ~~**10:30** [`S-po-publish-and-readme`] README skeleton at 80%~~ **DONE** — README has the hackathon table, sourced stats, tools table, orchestrator section, hero patient, AI Factor, architecture, 5Ts, standards, timeline, MIT license, and authors. No `marketplace.yaml`.
+- [x] ~~**10:45** [`S-po-publish-and-readme`] Prompt Opinion publish-readiness findings~~ **DONE** — `docs/publish-readiness.md` records official Stage One/video/Marketplace requirements, fixed deploy blockers, remaining human/platform gates, and exact Devpost inputs.
 - [ ] **11:30** **Submit Devpost as draft tonight** — placeholder video link OK, everything else final-shape.
 - [ ] **11:45** `git tag d5-eod-green`. Sleep.
 
@@ -93,12 +94,16 @@ If any of these is red → record an *insurance* rough-cut video tonight even if
 
 **Theme:** Record. Polish. Submit by 18:00. No new code after 14:00.
 
-### Block 1 · Morning (4h) — record
+### Block 1 · Morning (4h) — deploy, publish, record
 
-- [ ] **00:00** Deploy both Workers to Cloudflare. Verify SHARP headers in network tab against the *deployed* URL (not local). Screenshot to `docs/sharp-proof/01-network-tab.png`.
-- [ ] **00:30** Register both URLs in a fresh PO workspace per `docs/po-registration.md`. Screenshot the workspace listing (MCP servers + External Agents pages) to `docs/sharp-proof/02-po-listing.png`.
-- [ ] **01:00** Run end-to-end through PO workspace once. Screenshot the orchestrator trace pane to `docs/sharp-proof/03-trace.png`. **This is the only run where it matters that it works in PO; if PO integration breaks here, fall back to local-Worker demo and document it in README under "Limitations."**
-- [ ] **01:30** Record final 2:45–2:55 video to the hackathon beat list. Two takes max. Pick the better one.
+- [ ] **00:00** Authenticate Cloudflare (`npx wrangler login` or API token) and confirm `npx wrangler whoami`.
+- [ ] **00:15** Deploy the MCP Worker (`npm run deploy`). Confirm `<featherless-worker-url>/mcp` is public and Workers AI is bound.
+- [ ] **00:30** Deploy the orchestrator Worker (`npm run deploy:orchestrator`). Confirm `/.well-known/agent-card.json` is public and the `FEATHERLESS_MCP` service binding reaches the MCP Worker.
+- [ ] **00:45** Make the synthetic Mrs. García FHIR server reachable from deployed Workers. Either use a Prompt Opinion workspace FHIR context that can host the bundle, or load `scripts/hero-bundle.json` into a temporary HTTPS synthetic HAPI instance with `FHIR_SERVER_URL=https://<synthetic-fhir-host>/fhir npx tsx scripts/load-hero.ts`.
+- [ ] **01:00** Register both URLs in a fresh PO workspace per `docs/po-registration.md`. Screenshot the workspace listing (MCP servers + External Agents pages) to `docs/sharp-proof/02-po-listing.png`.
+- [ ] **01:20** Run end-to-end through PO workspace once. Screenshot the deployed SHARP headers to `docs/sharp-proof/01-network-tab.png` and the orchestrator trace pane to `docs/sharp-proof/03-trace.png`. **This is the only run where it matters that it works in PO; if PO integration breaks here, fall back to local-Worker demo and document it in README under "Limitations."**
+- [ ] **01:40** Publish the configured project to the Prompt Opinion Marketplace and copy the Marketplace URL. Record the MCP URL, AgentCard URL, and PO invocation proof regardless. If the publish UI is not visible after workspace registration, ask PO support/Discord immediately with those artifacts; if there is no response within 15 minutes, proceed with the video using workspace registration proof, mark Marketplace publication as "pending platform support" in README limitations, and still copy the Marketplace URL if it appears later.
+- [ ] **02:00** Record final 2:45–2:55 video to the hackathon beat list. Two takes max. Pick the better one.
   - 0:00–0:15 patient hook (Mrs. García leaving the cardiologist)
   - 0:15–0:35 three statistics on screen, sourced from CITATIONS
   - 0:35–1:30 PO platform run — agent handshake, A2A trace pane, tools fire
@@ -135,7 +140,7 @@ If any of these is red → record an *insurance* rough-cut video tonight even if
 - [ ] **Three Featherless visit-workflow tools max.** New ideas → `BACKLOG.md`.
 - [ ] **Citation-or-cut.** Any clinical claim, anywhere, must trace to `CITATIONS.md`. No grounding → cut.
 - [ ] **No token storage, ever.** Both Workers log per-request; persist nothing. Verify by reading the source before deploy.
-- [ ] **Synthetic data only.** Local HAPI + hand-crafted bundle. No HAPI public sandbox in the demo path.
+- [ ] **Synthetic data only.** Local HAPI + hand-crafted bundle. If HAPI is exposed for judging, it must contain only the synthetic bundle and must be temporary or access-controlled.
 - [ ] **Human-in-the-loop on send.** `CommunicationRequest.status = "draft"` with `intent = "proposal"`, never `"active"`.
 - [ ] **Build like deadline is D6 14:00.** The 4 hours after that are submission, not building.
 - [ ] **No new dependencies after D5 EOD.** Period.

@@ -23,6 +23,12 @@ npx wrangler deploy --config wrangler-orchestrator.jsonc --dry-run
 
 On 2026-05-10, both dry-runs built successfully in this workspace, but `wrangler whoami` reported that Cloudflare authentication was missing. A logged-in Cloudflare session or API token is required before the real deploy commands can produce public URLs.
 
+The deployable path is now:
+
+- MCP Worker: `wrangler.jsonc` binds Workers AI and disables optional memory by default with `MEM0_DISABLED=1`; no D1/Vectorize resource is required for the hackathon workflow.
+- A2A orchestrator: `wrangler-orchestrator.jsonc` binds the MCP Worker as `FEATHERLESS_MCP`. This avoids a public `localhost` target and keeps Worker-to-Worker calls inside Cloudflare.
+- Fallback only: if the orchestrator is deployed somewhere that cannot use the service binding, configure `FEATHERLESS_MCP_URL` to the deployed HTTPS MCP endpoint. A loopback URL is rejected for public requests.
+
 Deploy commands:
 
 ```bash
@@ -71,7 +77,23 @@ Expected response:
 - Five closure resources: three `Task`, one draft `CommunicationRequest` proposal, one `DocumentReference`.
 - Trace with the three MCP hops and non-zero timings.
 
-## 4. SHARP Proof Screenshots
+Important: local HAPI at `127.0.0.1:8080` is for tests only. The deployed Workers must receive a FHIR context whose `fhirUrl` is reachable from Cloudflare. Use Prompt Opinion's workspace FHIR server if it can host the synthetic patient, or load the hero bundle into an HTTPS-reachable synthetic HAPI instance:
+
+```bash
+FHIR_SERVER_URL=https://<synthetic-fhir-host>/fhir npx tsx scripts/load-hero.ts
+```
+
+## 4. Publish To Marketplace
+
+After both URLs are registered and the consult flow works inside Prompt Opinion, publish the configured project to the Prompt Opinion Marketplace and copy the Marketplace URL for Devpost.
+
+Public Prompt Opinion docs verified the MCP, External Agent, and FHIR-context registration flows, while the hackathon rules verify that Marketplace publication is mandatory. The public docs did not expose a step-by-step Marketplace publishing UI. If the publish control is not visible after workspace registration, contact Prompt Opinion support or Discord immediately with:
+
+- MCP URL: `<featherless-worker-url>/mcp`
+- AgentCard URL: `<orchestrator-worker-url>/.well-known/agent-card.json`
+- proof that the project is invokable from a BYO Agent through `Consult with another agent`
+
+## 5. SHARP Proof Screenshots
 
 Save final screenshots here:
 

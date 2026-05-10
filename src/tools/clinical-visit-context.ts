@@ -3,11 +3,12 @@ import { bundleToResources, codingText } from "../fhir-utils.ts";
 /**
  * Visit-scoped clinical context packer — `clinical_pack_visit_context`.
  *
- * Composes the substrate's clinical-context aggregator with raw fetches for
- * Patient + Encounter + MedicationRequest + ServiceRequest + Appointment +
- * DocumentReference, and returns the typed visit-context payload defined in
- * `HERO_PATIENT.md` §7. Snake_case throughout. No HTTP self-call — every
- * dependency runs in-process under the same SHARP context.
+ * Composes the substrate's clinical-context aggregator, reusing its raw
+ * Patient/Condition/MedicationRequest/Observation resources, with raw fetches
+ * for ServiceRequest + Appointment + DocumentReference. Returns the typed
+ * visit-context payload defined in `HERO_PATIENT.md` §7. Snake_case
+ * throughout. No HTTP self-call — every dependency runs in-process under the
+ * same SHARP context.
  *
  * Runs as a single MCP tool registration via `registerClinicalVisitContextTools(server)`,
  * which is wired into `src/server.ts` next to the substrate registrations.
@@ -429,44 +430,26 @@ async function packVisitContext(args: VisitContextInput): Promise<VisitContext |
     throw e;
   }
 
-  const [
-    aggregateResult,
-    rawPatient,
-    medReqBundle,
-    serviceRequestBundle,
-    appointmentBundle,
-    documentBundle,
-    vitalsBundle,
-    labsBundle,
-  ] = await Promise.all([
-    aggregateClinicalContext({
-      patient_id: pid,
-      lab_lookback_days: 365,
-      vitals_lookback_days: 365,
-      encounter_lookback_days: 90,
-      include_alerts: false,
-    }),
-    fhir.getPatient(pid),
-    fhir.getMedicationRequests(pid, { status: "active", count: 100 }),
-    fhir.search("ServiceRequest", { patient: pid, _count: 50 }),
-    fhir.getAppointments(pid, { count: 25 }),
-    fhir.getDocumentReferences(pid, { count: 25 }),
-    fhir.getObservations(pid, {
-      category: "vital-signs",
-      date: `ge${new Date(Date.now() - 365 * MS_PER_DAY).toISOString().slice(0, 10)}`,
-      count: 200,
-    }),
-    fhir.getObservations(pid, {
-      category: "laboratory",
-      date: `ge${new Date(Date.now() - 365 * MS_PER_DAY).toISOString().slice(0, 10)}`,
-      count: 200,
-    }),
-  ]);
+  const [aggregateResult, serviceRequestBundle, appointmentBundle, documentBundle] =
+    await Promise.all([
+      aggregateClinicalContext({
+        patient_id: pid,
+        lab_lookback_days: 365,
+        vitals_lookback_days: 365,
+        encounter_lookback_days: 90,
+        include_alerts: false,
+        include_raw_resources: true,
+      }),
+      fhir.search("ServiceRequest", { patient: pid, _count: 50 }),
+      fhir.getAppointments(pid, { count: 25 }),
+      fhir.getDocumentReferences(pid, { count: 25 }),
+    ]);
 
   if (aggregateResult && typeof aggregateResult === "object" && "error" in aggregateResult) {
     return aggregateResult as Dict;
   }
   const aggregate = aggregateResult as ClinicalContextAggregate;
+  const rawResources = aggregate.raw_resources;
 
   // Pick encounter via summary (id + start), then refetch raw for participant + canonical type.
   const encSummary = pickEncounter(aggregate.recent_encounters, args.encounter_id);
@@ -491,7 +474,7 @@ async function packVisitContext(args: VisitContextInput): Promise<VisitContext |
   const encounterDate = dateOnly(encounterStartIso) ?? "";
 
   // Patient block
-  const language = args.language ?? preferredLanguageFromPatient(rawPatient);
+  const language = args.language ?? preferredLanguageFromPatient(asObj(rawResources?.patient));
   const patientBlock: VisitContext["patient"] = {
     id: pid,
     name: (aggregate.demographics.name as string) ?? pid,
@@ -511,11 +494,8 @@ async function packVisitContext(args: VisitContextInput): Promise<VisitContext |
   };
 
   // Active problems — enrich each from labs + condition text
-  const rawConditions = bundleToResources(
-    asObj(await fhir.getConditions(pid, { clinicalStatus: "active", count: 100 })),
-  );
   const conditionTextById = new Map<string, string>();
-  for (const c of rawConditions) {
+  for (const c of rawResources?.conditions ?? []) {
     conditionTextById.set(
       (c.id as string) ?? "",
       (asObj(c.code).text as string) ?? codingText(asObj(c.code)),
@@ -534,9 +514,8 @@ async function packVisitContext(args: VisitContextInput): Promise<VisitContext |
   });
 
   // Medication changes — derive action from authoredOn vs encounter start
-  const rawMedReqs = bundleToResources(asObj(medReqBundle));
   const medExtrasById = new Map<string, MedExtras>();
-  for (const mr of rawMedReqs) {
+  for (const mr of rawResources?.medication_requests ?? []) {
     medExtrasById.set((mr.id as string) ?? "", extractMedExtras(mr));
   }
   const cutoff = encounterDate;
@@ -574,8 +553,8 @@ async function packVisitContext(args: VisitContextInput): Promise<VisitContext |
   const orders = buildOrders(serviceRequests, appointments, encounterId, encounterStartIso);
 
   // Vitals + labs (raw, since we want components)
-  const rawVitals = bundleToResources(asObj(vitalsBundle));
-  const rawLabs = bundleToResources(asObj(labsBundle));
+  const rawVitals = rawResources?.vitals ?? [];
+  const rawLabs = rawResources?.labs ?? [];
   const vitalsToday = buildVitalsToday(rawVitals, encounterDate);
   const keyLabs = buildKeyLabs(rawLabs);
 

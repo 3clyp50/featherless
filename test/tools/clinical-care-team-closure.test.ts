@@ -1,5 +1,5 @@
 import { SELF } from "cloudflare:test";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildCareTeamClosureResources } from "../../src/tools/clinical-care-team-closure.ts";
 import { careTeamClosureOutputSchema } from "../../src/tools/schemas/care-team-closure.ts";
 import { heroVisitContext } from "./fixtures.ts";
@@ -35,6 +35,12 @@ const sharpHeaders = {
   "X-Patient-ID": HERO_PATIENT,
 };
 
+function addDays(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 describe("clinical_prepare_care_team_closure", () => {
   it("appears in tools/list", async () => {
     const r = await rpc("tools/list");
@@ -62,6 +68,40 @@ describe("clinical_prepare_care_team_closure", () => {
     expect(comm?.status).toBe("draft");
     expect(comm?.intent).toBe("proposal");
     expect((comm?.subject as { reference?: string }).reference).toBe(`Patient/${HERO_PATIENT}`);
+  });
+
+  it("uses today's date when the encounter date is missing or invalid", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-10T09:00:00.000Z"));
+    try {
+      const baseDate = "2026-05-10";
+      const invalidDates = ["", "not-a-date", "2024-13-99", null, undefined, "2024", "2024-12"];
+
+      for (const date of invalidDates) {
+        const ctx = {
+          ...heroVisitContext,
+          encounter: { ...heroVisitContext.encounter, date },
+        } as typeof heroVisitContext;
+        const resources = buildCareTeamClosureResources(ctx, "packet");
+        const tasks = resources.filter((r) => r.resourceType === "Task");
+        const dueDates = tasks.map(
+          (t) => (t.restriction as { period?: { end?: string } }).period?.end ?? "",
+        );
+
+        expect(tasks.map((task) => task.authoredOn)).toEqual([
+          `${baseDate}T12:00:00Z`,
+          `${baseDate}T12:00:00Z`,
+          `${baseDate}T12:00:00Z`,
+        ]);
+        expect(dueDates).toEqual([
+          addDays(baseDate, 14),
+          addDays(baseDate, 56),
+          addDays(baseDate, 7),
+        ]);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("validates resources against local HAPI and does not write back by default", async () => {

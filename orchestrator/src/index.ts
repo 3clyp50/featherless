@@ -23,10 +23,9 @@ import {
 
 type Dict = Record<string, unknown>;
 type JsonRpcId = string | number | null;
-type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 export interface OrchestratorEnv extends Env {
-  FEATHERLESS_MCP_URL?: string;
   ORCHESTRATOR_URL?: string;
   FHIR_EXTENSION_URI?: string;
   ORCHESTRATOR_API_KEY?: string;
@@ -72,6 +71,7 @@ export const DEFAULT_FHIR_EXTENSION_URI =
 
 const AGENT_CARD_PATH = "/.well-known/agent-card.json";
 const DEFAULT_MCP_CALL_TIMEOUT_MS = 10_000;
+const SERVICE_BINDING_MCP_URL = "https://featherless.internal/mcp";
 const JSON_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
@@ -112,8 +112,62 @@ function extensionUri(env: OrchestratorEnv): string {
   return env.FHIR_EXTENSION_URI ?? DEFAULT_FHIR_EXTENSION_URI;
 }
 
-function mcpUrl(request: Request, env: OrchestratorEnv): string {
-  return env.FEATHERLESS_MCP_URL ?? `${new URL(request.url).origin}/mcp`;
+function isLoopbackHostname(hostname: string): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0" ||
+    hostname === "::1" ||
+    hostname === "[::1]"
+  );
+}
+
+function deployableMcpUrl(request: Request, configuredUrl: string): string {
+  const url = cleanBaseUrl(configuredUrl.trim());
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error("mcp_config_invalid: FEATHERLESS_MCP_URL must be an absolute URL.");
+  }
+
+  const requestHostname = new URL(request.url).hostname;
+  const targetIsLoopback = isLoopbackHostname(parsed.hostname);
+  const requestIsLoopback = isLoopbackHostname(requestHostname);
+  if (targetIsLoopback && !requestIsLoopback) {
+    throw new Error(
+      "mcp_config_not_deployable: FEATHERLESS_MCP_URL points to loopback from a public request.",
+    );
+  }
+  if (parsed.protocol !== "https:" && !targetIsLoopback) {
+    throw new Error(
+      "mcp_config_not_deployable: FEATHERLESS_MCP_URL must be HTTPS outside local development.",
+    );
+  }
+  return url;
+}
+
+function mcpTarget(
+  request: Request,
+  env: OrchestratorEnv,
+  defaultFetcher: FetchFn,
+): { fetcher: FetchFn; url: string } {
+  const configured = env.FEATHERLESS_MCP_URL?.trim();
+  if (configured) {
+    return { fetcher: defaultFetcher, url: deployableMcpUrl(request, configured) };
+  }
+
+  if (env.FEATHERLESS_MCP) {
+    return {
+      fetcher: (input, init) =>
+        env.FEATHERLESS_MCP?.fetch(input, init) ?? defaultFetcher(input, init),
+      url: SERVICE_BINDING_MCP_URL,
+    };
+  }
+
+  throw new Error(
+    "mcp_config_required: bind FEATHERLESS_MCP or set FEATHERLESS_MCP_URL to the deployed MCP endpoint.",
+  );
 }
 
 function mcpCallTimeoutMs(env: OrchestratorEnv): number {
@@ -289,7 +343,7 @@ function structuredContentFromMcp(json: Dict, tool: string): unknown {
 }
 
 async function callMcpTool(
-  fetcher: Fetcher,
+  fetcher: FetchFn,
   url: string,
   fhir: FhirContext,
   tool: string,
@@ -333,7 +387,7 @@ function schemaError(label: string, error: { message: string }): Error {
 }
 
 export async function runFeatherlessWorkflow(input: {
-  fetcher: Fetcher;
+  fetcher: FetchFn;
   mcpUrl: string;
   fhir: FhirContext;
   timeoutMs?: number;
@@ -429,7 +483,7 @@ async function handleMessageSend(
   body: Dict,
   request: Request,
   env: OrchestratorEnv,
-  fetcher: Fetcher,
+  fetcher: FetchFn,
 ): Promise<Response> {
   const id = rpcId(body.id);
   const params = asDict(body.params) ?? {};
@@ -456,9 +510,10 @@ async function handleMessageSend(
     crypto.randomUUID();
 
   try {
+    const target = mcpTarget(request, env, fetcher);
     const envelope = await runFeatherlessWorkflow({
-      fetcher,
-      mcpUrl: mcpUrl(request, env),
+      fetcher: target.fetcher,
+      mcpUrl: target.url,
       fhir,
       timeoutMs: mcpCallTimeoutMs(env),
     });
@@ -481,7 +536,7 @@ function apiKeyFailure(request: Request, env: OrchestratorEnv): Response | null 
 }
 
 export function createOrchestratorHandler(
-  options: { fetcher?: Fetcher } = {},
+  options: { fetcher?: FetchFn } = {},
 ): OrchestratorHandler {
   const fetcher = options.fetcher ?? fetch;
   return {
