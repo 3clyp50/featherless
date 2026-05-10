@@ -7,7 +7,7 @@ This guide is for judges and teammates registering Featherless in a fresh Prompt
 | Surface | URL |
 |---|---|
 | Featherless MCP server | `https://featherless-mcp.inf3ctious007.workers.dev/mcp` |
-| Featherless A2A orchestrator AgentCard | `<orchestrator-worker-url>/.well-known/agent-card.json` |
+| Featherless A2A orchestrator AgentCard | `https://featherless-orchestrator.inf3ctious007.workers.dev/.well-known/agent-card.json` |
 
 Use deployed HTTPS URLs for final judging. Localhost URLs are useful only for development.
 
@@ -21,7 +21,7 @@ npx wrangler deploy --dry-run
 npx wrangler deploy --config wrangler-orchestrator.jsonc --dry-run
 ```
 
-On 2026-05-10, both dry-runs built successfully in this workspace, but `wrangler whoami` reported that Cloudflare authentication was missing. A logged-in Cloudflare session or API token is required before the real deploy commands can produce public URLs.
+On 2026-05-10, `wrangler whoami` succeeded for `Inf3ctious007@gmail.com's Account` (`2a6a96ae8f3d1a965febebb24df965f4`). The MCP Worker and orchestrator Worker both have public deployed URLs listed above.
 
 The deployable path is now:
 
@@ -55,7 +55,7 @@ Expected result: Prompt Opinion can list MCP tools including:
 ## 2. Register The A2A Orchestrator
 
 1. Go to `Agents` -> `External Agents`.
-2. Add the AgentCard URL: `<orchestrator-worker-url>/.well-known/agent-card.json`.
+2. Add the AgentCard URL: `https://featherless-orchestrator.inf3ctious007.workers.dev/.well-known/agent-card.json`.
 3. Confirm the agent name is `featherless`.
 4. Confirm `preferredTransport` is `JSONRPC`.
 5. Confirm the FHIR context extension appears: `https://app.promptopinion.ai/schemas/a2a/v1/fhir-context`.
@@ -90,7 +90,7 @@ After both URLs are registered and the consult flow works inside Prompt Opinion,
 Public Prompt Opinion docs verified the MCP, External Agent, and FHIR-context registration flows, while the hackathon rules verify that Marketplace publication is mandatory. The public docs did not expose a step-by-step Marketplace publishing UI. If the publish control is not visible after workspace registration, contact Prompt Opinion support or Discord immediately with:
 
 - MCP URL: `<featherless-worker-url>/mcp`
-- AgentCard URL: `<orchestrator-worker-url>/.well-known/agent-card.json`
+- AgentCard URL: `https://featherless-orchestrator.inf3ctious007.workers.dev/.well-known/agent-card.json`
 - proof that the project is invokable from a BYO Agent through `Consult with another agent`
 
 ## 5. SHARP Proof Screenshots

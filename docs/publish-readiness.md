@@ -41,6 +41,8 @@ Without `MEMORY_INDEX` and `MEMORY_META`, `MemoryClient.fromEnv()` intentionally
    npx wrangler whoami
    ```
 
+   Completed on 2026-05-10 for `Inf3ctious007@gmail.com's Account` (`2a6a96ae8f3d1a965febebb24df965f4`).
+
 2. Deploy the MCP Worker first:
 
    ```bash
@@ -55,7 +57,7 @@ Without `MEMORY_INDEX` and `MEMORY_META`, `MemoryClient.fromEnv()` intentionally
    npm run deploy:orchestrator
    ```
 
-   Expected public AgentCard: `<orchestrator-worker-url>/.well-known/agent-card.json`.
+   Confirmed public AgentCard: `https://featherless-orchestrator.inf3ctious007.workers.dev/.well-known/agent-card.json`.
 
 4. Confirm the deployed orchestrator can reach the deployed MCP Worker through the Cloudflare service binding in `wrangler-orchestrator.jsonc`: `FEATHERLESS_MCP -> featherless-mcp`. This is preferred over `FEATHERLESS_MCP_URL` because the call stays Worker-to-Worker inside Cloudflare. If using a different Cloudflare account or deployment shape where service binding is impossible, set `FEATHERLESS_MCP_URL=https://featherless-mcp.inf3ctious007.workers.dev/mcp`; never use `localhost` or `127.0.0.1` for judging.
 
