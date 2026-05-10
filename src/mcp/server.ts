@@ -12,7 +12,7 @@
  * no DO-backed sessions — fine for hackathon scope and SHARP doesn't
  * require streaming for tool calls.
  */
-import { z, type ZodTypeAny } from "zod";
+import type { ZodTypeAny, z } from "zod";
 import { zodToJsonSchema } from "../mcp/zod-to-json-schema.ts";
 
 export interface ToolDefinition<S extends ZodTypeAny = ZodTypeAny> {
@@ -70,7 +70,12 @@ export class McpServer {
     };
   }
 
-  tool<S extends ZodTypeAny>(name: string, description: string, inputSchema: S, handler: ToolDefinition<S>["handler"]): void {
+  tool<S extends ZodTypeAny>(
+    name: string,
+    description: string,
+    inputSchema: S,
+    handler: ToolDefinition<S>["handler"],
+  ): void {
     if (this.tools.has(name)) {
       throw new Error(`Tool already registered: ${name}`);
     }
@@ -92,9 +97,7 @@ export class McpServer {
     if (!parsed.success) {
       return {
         isError: true,
-        content: [
-          { type: "text", text: `Invalid arguments: ${parsed.error.message}` },
-        ],
+        content: [{ type: "text", text: `Invalid arguments: ${parsed.error.message}` }],
       };
     }
     const result = await tool.handler(parsed.data);
@@ -108,9 +111,7 @@ export class McpServer {
     }
     // Otherwise wrap as a single text-content tool response with the JSON payload.
     return {
-      content: [
-        { type: "text", text: JSON.stringify(result, null, 2) },
-      ],
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
       structuredContent: result,
     };
   }
@@ -160,7 +161,11 @@ export class McpServer {
       return {
         jsonrpc: "2.0",
         id,
-        error: { code: -32000, message, data: err instanceof Error ? { name: err.name } : undefined },
+        error: {
+          code: -32000,
+          message,
+          data: err instanceof Error ? { name: err.name } : undefined,
+        },
       };
     }
   }

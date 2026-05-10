@@ -3,7 +3,6 @@
  * Wraps FHIR Observation, DiagnosticReport, DocumentReference.
  */
 import { z } from "zod";
-import type { McpServer } from "../mcp/server.ts";
 import { FHIRError } from "../clients/fhir-client.ts";
 import {
   bundleNextLink,
@@ -13,11 +12,8 @@ import {
   documentReferenceSummary,
   observationSummary,
 } from "../fhir-utils.ts";
-import {
-  checkFhirContext,
-  fhirClientForCurrentContext,
-  resolvePatientId,
-} from "./_helpers.ts";
+import type { McpServer } from "../mcp/server.ts";
+import { checkFhirContext, fhirClientForCurrentContext, resolvePatientId } from "./_helpers.ts";
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(Math.max(n, lo), hi);
 
@@ -83,7 +79,8 @@ export function registerLabImagingTools(server: McpServer): void {
         const grouped: Record<string, Record<string, unknown>[]> = {};
         for (const v of vitals) {
           const key = (v.test as string) || "Unknown";
-          (grouped[key] ??= []).push(v);
+          grouped[key] ??= [];
+          grouped[key].push(v);
         }
         return {
           vitals,
@@ -115,7 +112,11 @@ export function registerLabImagingTools(server: McpServer): void {
       const pid = resolvePatientId(patient_id) ?? "";
       try {
         const fhir = fhirClientForCurrentContext();
-        const bundle = await fhir.getDiagnosticReports(pid, { category, date, count: clamp(count, 1, 250) });
+        const bundle = await fhir.getDiagnosticReports(pid, {
+          category,
+          date,
+          count: clamp(count, 1, 250),
+        });
         const reports = bundleToResources(bundle).map(diagnosticReportSummary);
         return {
           reports,

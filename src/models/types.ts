@@ -32,7 +32,40 @@ export const ObservationCategorySchema = z.enum([
 ]);
 export type ObservationCategory = z.infer<typeof ObservationCategorySchema>;
 
-export const ConditionStatusSchema = z.enum(["active", "recurrence", "relapse", "inactive", "remission", "resolved"]);
-export const MedicationStatusSchema = z.enum(["active", "on-hold", "cancelled", "completed", "stopped", "draft", "unknown"]);
-export const EncounterStatusSchema = z.enum(["planned", "arrived", "triaged", "in-progress", "onleave", "finished", "cancelled"]);
-export const AppointmentStatusSchema = z.enum(["proposed", "pending", "booked", "arrived", "fulfilled", "cancelled", "noshow", "checked-in", "waitlist"]);
+export const ConditionStatusSchema = z.enum([
+  "active",
+  "recurrence",
+  "relapse",
+  "inactive",
+  "remission",
+  "resolved",
+]);
+export const MedicationStatusSchema = z.enum([
+  "active",
+  "on-hold",
+  "cancelled",
+  "completed",
+  "stopped",
+  "draft",
+  "unknown",
+]);
+export const EncounterStatusSchema = z.enum([
+  "planned",
+  "arrived",
+  "triaged",
+  "in-progress",
+  "onleave",
+  "finished",
+  "cancelled",
+]);
+export const AppointmentStatusSchema = z.enum([
+  "proposed",
+  "pending",
+  "booked",
+  "arrived",
+  "fulfilled",
+  "cancelled",
+  "noshow",
+  "checked-in",
+  "waitlist",
+]);

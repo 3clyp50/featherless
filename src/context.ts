@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 /**
  * SHARP-on-MCP per-request context propagation.
  *
@@ -11,9 +12,8 @@
  *   X-Patient-ID         Optional default patient context.
  */
 import { decodeJwt } from "jose";
-import { AsyncLocalStorage } from "node:async_hooks";
-import type { Env } from "./env.ts";
 import { FHIRClient } from "./clients/fhir-client.ts";
+import type { Env } from "./env.ts";
 
 export const HEADER_FHIR_SERVER_URL = "X-FHIR-Server-URL";
 export const HEADER_FHIR_ACCESS_TOKEN = "X-FHIR-Access-Token";
@@ -104,17 +104,16 @@ export function parseSharpHeaders(req: Request, env: Env): SharpContext {
   const headerToken = h.get(HEADER_FHIR_ACCESS_TOKEN);
   const headerPatient = h.get(HEADER_PATIENT_ID);
 
-  const serverUrl = rstripSlash(headerServerUrl ?? (devMode ? env.FHIR_SERVER_URL ?? null : null));
+  const serverUrl = rstripSlash(
+    headerServerUrl ?? (devMode ? (env.FHIR_SERVER_URL ?? null) : null),
+  );
   const accessToken = stripBearer(
-    headerToken ?? (devMode ? env.FHIR_ACCESS_TOKEN ?? null : null),
+    headerToken ?? (devMode ? (env.FHIR_ACCESS_TOKEN ?? null) : null),
   );
 
   // Patient resolution order matches Python: JWT → header → env (dev only)
   const claims = jwtClaims(accessToken);
-  const patientId =
-    claims.patient ??
-    headerPatient ??
-    (devMode ? env.PATIENT_ID ?? null : null);
+  const patientId = claims.patient ?? headerPatient ?? (devMode ? (env.PATIENT_ID ?? null) : null);
 
   return {
     serverUrl,

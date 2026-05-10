@@ -143,10 +143,7 @@ export class FHIRClient {
     return this.get(`/${resourceType}/${resourceId}`);
   }
 
-  search(
-    resourceType: string,
-    params?: Record<string, unknown>,
-  ): Promise<FHIRBundle> {
+  search(resourceType: string, params?: Record<string, unknown>): Promise<FHIRBundle> {
     return this.get(`/${resourceType}`, params) as Promise<FHIRBundle>;
   }
 
@@ -158,15 +155,17 @@ export class FHIRClient {
     return this.getResource("Patient", patientId);
   }
 
-  searchPatients(opts: {
-    name?: string;
-    family?: string;
-    given?: string;
-    birthdate?: string;
-    identifier?: string;
-    gender?: string;
-    count?: number;
-  } = {}): Promise<FHIRBundle> {
+  searchPatients(
+    opts: {
+      name?: string;
+      family?: string;
+      given?: string;
+      birthdate?: string;
+      identifier?: string;
+      gender?: string;
+      count?: number;
+    } = {},
+  ): Promise<FHIRBundle> {
     const { count = 25, ...rest } = opts;
     return this.search("Patient", { _count: count, ...rest });
   }

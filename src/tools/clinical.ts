@@ -5,7 +5,6 @@
  * All read-only. Compact summaries via `fhir-utils`.
  */
 import { z } from "zod";
-import type { McpServer } from "../mcp/server.ts";
 import { FHIRError } from "../clients/fhir-client.ts";
 import {
   allergySummary,
@@ -19,11 +18,8 @@ import {
   medicationRequestSummary,
   patientSummary,
 } from "../fhir-utils.ts";
-import {
-  checkFhirContext,
-  fhirClientForCurrentContext,
-  resolvePatientId,
-} from "./_helpers.ts";
+import type { McpServer } from "../mcp/server.ts";
+import { checkFhirContext, fhirClientForCurrentContext, resolvePatientId } from "./_helpers.ts";
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(Math.max(n, lo), hi);
 
@@ -47,7 +43,14 @@ export function registerClinicalTools(server: McpServer): void {
     async (args) => {
       const err = checkFhirContext();
       if (err) return err;
-      if (!args.name && !args.family && !args.given && !args.birthdate && !args.identifier && !args.gender) {
+      if (
+        !args.name &&
+        !args.family &&
+        !args.given &&
+        !args.birthdate &&
+        !args.identifier &&
+        !args.gender
+      ) {
         return { error: "Provide at least one search field." };
       }
       try {
@@ -105,7 +108,10 @@ export function registerClinicalTools(server: McpServer): void {
     z.object({
       patient_id: z.string().optional(),
       date: z.string().optional().describe("FHIR date filter, e.g. ge2025-01-01"),
-      status: z.string().optional().describe("Appointment status: booked, arrived, fulfilled, cancelled, ..."),
+      status: z
+        .string()
+        .optional()
+        .describe("Appointment status: booked, arrived, fulfilled, cancelled, ..."),
       count: z.number().int().min(1).max(250).default(25),
     }),
     async ({ patient_id, date, status, count }) => {
@@ -114,7 +120,11 @@ export function registerClinicalTools(server: McpServer): void {
       const pid = resolvePatientId(patient_id);
       try {
         const fhir = fhirClientForCurrentContext();
-        const bundle = await fhir.getAppointments(pid, { date, status, count: clamp(count, 1, 250) });
+        const bundle = await fhir.getAppointments(pid, {
+          date,
+          status,
+          count: clamp(count, 1, 250),
+        });
         const appointments = bundleToResources(bundle).map(appointmentSummary);
         return {
           appointments,
@@ -135,7 +145,10 @@ export function registerClinicalTools(server: McpServer): void {
     z.object({
       patient_id: z.string().optional(),
       date: z.string().optional().describe("FHIR date filter, e.g. ge2024-01-01"),
-      status: z.string().optional().describe("planned | arrived | in-progress | finished | cancelled | ..."),
+      status: z
+        .string()
+        .optional()
+        .describe("planned | arrived | in-progress | finished | cancelled | ..."),
       count: z.number().int().min(1).max(250).default(25),
     }),
     async ({ patient_id, date, status, count }) => {
@@ -204,7 +217,11 @@ export function registerClinicalTools(server: McpServer): void {
     "Return the patient's medications (FHIR MedicationRequest).",
     z.object({
       patient_id: z.string().optional(),
-      status: z.string().optional().default("active").describe("Pass empty string for all statuses"),
+      status: z
+        .string()
+        .optional()
+        .default("active")
+        .describe("Pass empty string for all statuses"),
       count: z.number().int().min(1).max(250).default(50),
     }),
     async ({ patient_id, status, count }) => {
