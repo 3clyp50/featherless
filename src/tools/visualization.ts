@@ -8,6 +8,7 @@ import { createUIResource } from "@mcp-ui/server";
 import { z } from "zod";
 import type { Env } from "../env.ts";
 import { FHIRError } from "../clients/fhir-client.ts";
+import { newRenderToken, putRender } from "../render-store.ts";
 import {
   allergySummary,
   bundleToResources,
@@ -37,6 +38,41 @@ function uiResource(uri: string, html: string): Dict {
     content: { type: "rawHtml", htmlString: html },
     encoding: "text",
   }) as Dict;
+}
+
+export interface RenderArtifacts {
+  renderUrl: string | null;
+  textContent: { type: "text"; text: string } | null;
+}
+
+/**
+ * Best-effort: store HTML in KV and produce a clickable link.
+ * Returns nulls if RENDER_CACHE is unset or KV write fails — viz tools
+ * must still emit their ui:// resource in that case (graceful degrade).
+ */
+export async function buildRenderArtifacts(
+  kv: KVNamespace | undefined,
+  originUrl: string,
+  html: string,
+): Promise<RenderArtifacts> {
+  if (!kv) return { renderUrl: null, textContent: null };
+  const token = newRenderToken();
+  try {
+    await putRender(kv, token, html);
+  } catch (e) {
+    console.warn(
+      `[render] put failed: ${e instanceof Error ? e.message : String(e)}`,
+    );
+    return { renderUrl: null, textContent: null };
+  }
+  const renderUrl = `${originUrl}/render/${token}`;
+  return {
+    renderUrl,
+    textContent: {
+      type: "text",
+      text: `📊 Interactive dashboard (15 min link): ${renderUrl}`,
+    },
+  };
 }
 
 function safeResources<T>(value: PromiseSettledResult<T>): Dict[] {
