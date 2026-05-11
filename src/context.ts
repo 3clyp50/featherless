@@ -26,6 +26,7 @@ export interface SharpContext {
   fhirUser: string | null;
   scopes: string | null;
   extraHeaders: Record<string, string>;
+  originUrl: string | null;
 }
 
 export const EMPTY_CONTEXT: SharpContext = {
@@ -35,6 +36,7 @@ export const EMPTY_CONTEXT: SharpContext = {
   fhirUser: null,
   scopes: null,
   extraHeaders: {},
+  originUrl: null,
 };
 
 export function hasFhir(ctx: SharpContext): boolean {
@@ -115,6 +117,14 @@ export function parseSharpHeaders(req: Request, env: Env): SharpContext {
   const claims = jwtClaims(accessToken);
   const patientId = claims.patient ?? headerPatient ?? (devMode ? (env.PATIENT_ID ?? null) : null);
 
+  const originUrl = (() => {
+    try {
+      return new URL(req.url).origin;
+    } catch {
+      return null;
+    }
+  })();
+
   return {
     serverUrl,
     accessToken,
@@ -122,6 +132,7 @@ export function parseSharpHeaders(req: Request, env: Env): SharpContext {
     fhirUser: claims.fhirUser,
     scopes: claims.scopes,
     extraHeaders: {},
+    originUrl,
   };
 }
 

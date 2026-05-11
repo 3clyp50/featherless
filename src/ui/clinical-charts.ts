@@ -56,6 +56,15 @@ function deepMerge(base: Dict, override: Dict): Dict {
   return base;
 }
 
+function jsonForInlineScript(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
 interface ChartArgs {
   chartId: string;
   chartType: "line" | "bar" | "doughnut";
@@ -106,7 +115,7 @@ function buildChartHtml(args: ChartArgs): string {
     data: { labels: args.labels, datasets: args.datasets },
     options,
   };
-  const configJson = JSON.stringify(config);
+  const configJson = jsonForInlineScript(config);
 
   return `
   <div style="height: 300px; position: relative;">

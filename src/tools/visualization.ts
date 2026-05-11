@@ -7,6 +7,8 @@ import { createUIResource } from "@mcp-ui/server";
  */
 import { z } from "zod";
 import { FHIRError } from "../clients/fhir-client.ts";
+import { getCurrentContext } from "../context.ts";
+import type { Env } from "../env.ts";
 import {
   allergySummary,
   bundleToResources,
@@ -18,6 +20,7 @@ import {
   patientSummary,
 } from "../fhir-utils.ts";
 import type { McpServer } from "../mcp/server.ts";
+import { newRenderToken, putRender } from "../render-store.ts";
 import {
   buildLabTrendChart,
   buildMedicationTimeline,
@@ -38,12 +41,55 @@ function uiResource(uri: string, html: string): Dict {
   }) as Dict;
 }
 
+export interface RenderArtifacts {
+  renderUrl: string | null;
+  textContent: { type: "text"; text: string } | null;
+}
+
+function escapeHtml(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Best-effort: store HTML in KV and produce a clickable link.
+ * Returns nulls if RENDER_CACHE is unset or KV write fails — viz tools
+ * must still emit their ui:// resource in that case (graceful degrade).
+ */
+export async function buildRenderArtifacts(
+  kv: KVNamespace | undefined,
+  originUrl: string,
+  html: string,
+): Promise<RenderArtifacts> {
+  if (!kv || !originUrl) return { renderUrl: null, textContent: null };
+  const token = newRenderToken();
+  try {
+    await putRender(kv, token, html);
+  } catch (e) {
+    console.warn(`[render] put failed: ${e instanceof Error ? e.message : String(e)}`);
+    return { renderUrl: null, textContent: null };
+  }
+  const renderUrl = `${originUrl}/render/${token}`;
+  return {
+    renderUrl,
+    textContent: {
+      type: "text",
+      text: `📊 Interactive dashboard (15 min link): ${renderUrl}`,
+    },
+  };
+}
+
 function safeResources<T>(value: PromiseSettledResult<T>): Dict[] {
   if (value.status !== "fulfilled") return [];
   return bundleToResources(value.value as Dict);
 }
 
-export function registerVisualizationTools(server: McpServer): void {
+export function registerVisualizationTools(server: McpServer, env: Env): void {
   // ====
   // Single-test lab trend chart
   // ====
@@ -87,15 +133,22 @@ export function registerVisualizationTools(server: McpServer): void {
 
         let html: string;
         if (!series.length) {
-          html = `<div style="padding:1rem;color:#64748b;font-family:sans-serif;">No numeric observations found for <code>${loinc_or_test}</code>.</div>`;
+          html = `<div style="padding:1rem;color:#64748b;font-family:sans-serif;">No numeric observations found for <code>${escapeHtml(loinc_or_test)}</code>.</div>`;
         } else {
           const testLabel = (observations[0]?.test as string) || loinc_or_test;
           html = buildLabTrendChart(testLabel, series, normalRange);
         }
 
         const uri = `ui://featherless/lab-trend/${pid}/${Math.floor(Date.now() / 1000)}`;
+        const origin = getCurrentContext().originUrl ?? "";
+        const artifacts = await buildRenderArtifacts(env.RENDER_CACHE, origin, html);
+
+        const content: Dict[] = [uiResource(uri, html)];
+        if (artifacts.textContent) content.push(artifacts.textContent);
+
         return {
-          content: [uiResource(uri, html)],
+          content,
+          render_url: artifacts.renderUrl,
           patient_id: pid,
           test: loinc_or_test,
           data_points: series.length,
@@ -134,8 +187,15 @@ export function registerVisualizationTools(server: McpServer): void {
         const vitals = bundleToResources(bundle).map(observationSummary);
         const html = buildVitalsDashboard(vitals);
         const uri = `ui://featherless/vitals/${pid}/${Math.floor(Date.now() / 1000)}`;
+        const origin = getCurrentContext().originUrl ?? "";
+        const artifacts = await buildRenderArtifacts(env.RENDER_CACHE, origin, html);
+
+        const content: Dict[] = [uiResource(uri, html)];
+        if (artifacts.textContent) content.push(artifacts.textContent);
+
         return {
-          content: [uiResource(uri, html)],
+          content,
+          render_url: artifacts.renderUrl,
           patient_id: pid,
           data_points: vitals.length,
         };
@@ -287,8 +347,15 @@ export function registerVisualizationTools(server: McpServer): void {
       }
 
       const uri = `ui://featherless/dashboard/${pid}/${Math.floor(Date.now() / 1000)}`;
+      const origin = getCurrentContext().originUrl ?? "";
+      const artifacts = await buildRenderArtifacts(env.RENDER_CACHE, origin, body);
+
+      const content: Dict[] = [uiResource(uri, body)];
+      if (artifacts.textContent) content.push(artifacts.textContent);
+
       return {
-        content: [uiResource(uri, body)],
+        content,
+        render_url: artifacts.renderUrl,
         patient_id: pid,
         patient_name: demographics.name ?? null,
         alerts_count: alerts.length,

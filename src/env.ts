@@ -11,6 +11,7 @@ export interface Env {
   MEMORY_INDEX?: VectorizeIndex;
   MEMORY_META?: D1Database;
   FEATHERLESS_MCP?: WorkerServiceBinding;
+  RENDER_CACHE?: KVNamespace;
 
   // Behaviour flags (vars)
   SHARP_STRICT_CONTEXT?: string; // "1" enables strict mode

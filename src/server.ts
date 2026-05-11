@@ -68,7 +68,7 @@ export function buildServer(env: Env): McpServer {
   registerClinicalTools(server);
   registerLabImagingTools(server);
   registerClinicalContextTools(server);
-  registerVisualizationTools(server);
+  registerVisualizationTools(server, env);
   registerClinicalVisitContextTools(server);
   registerClinicalPatientPacketTools(server, env);
   registerClinicalCareTeamClosureTools(server, env);

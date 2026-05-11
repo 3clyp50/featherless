@@ -12,5 +12,12 @@
     "WRITE_BACK": "0",
     "LLM_MODEL": "@cf/openai/gpt-oss-120b"
   },
-  "ai": { "binding": "AI" }
+  "ai": { "binding": "AI" },
+  "kv_namespaces": [
+    {
+      "binding": "RENDER_CACHE",
+      "id": "5725f9a173644ca2b8131da09d7784b9",
+      "preview_id": "6d34d97856e849e6a2d57c3875d4636c"
+    }
+  ]
 }

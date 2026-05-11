@@ -16,6 +16,7 @@ import {
   isJSONRPCRequest,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Env } from "./env.ts";
+import { getRender } from "./render-store.ts";
 import { SERVER_NAME, SERVER_VERSION, buildServer } from "./server.ts";
 
 export type { Env };
@@ -130,10 +131,61 @@ async function handleMcp(request: Request, env: Env): Promise<Response> {
   return runWithContext(ctx, () => bridge.handleRequest(request));
 }
 
+async function handleRender(request: Request, env: Env): Promise<Response> {
+  if (!env.RENDER_CACHE) {
+    return new Response("Render cache not configured", { status: 503 });
+  }
+  const url = new URL(request.url);
+  const token = url.pathname.slice("/render/".length);
+
+  const body = await getRender(env.RENDER_CACHE, token);
+  if (body === null) {
+    console.warn(`[render] miss token=${token.slice(0, 8)}…`);
+    // KV is eventually consistent; on the rare race where a freshly-written
+    // token is read before propagation, the user can refresh. Avoiding an
+    // in-handler sleep keeps every 404 cheap (DoS-resistant).
+    return new Response("Not found or expired", { status: 404 });
+  }
+
+  console.log(`[render] hit token=${token.slice(0, 8)}…`);
+
+  const doc = `<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Clinical Dashboard</title>
+<meta name="referrer" content="no-referrer">
+<style>body{margin:0;font:14px/1.5 -apple-system,sans-serif;background:#f8fafc}</style>
+</head><body>${body}</body></html>`;
+
+  return new Response(doc, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store, private",
+      "X-Robots-Tag": "noindex, nofollow",
+      "Referrer-Policy": "no-referrer",
+      "X-Content-Type-Options": "nosniff",
+      // Restrict what the rendered fragment may load/execute. Chart.js loads
+      // from jsdelivr; init scripts are inline (so 'unsafe-inline' required).
+      // This blocks injected <script src="evil"> and frame embedding.
+      "Content-Security-Policy": [
+        "default-src 'none'",
+        "script-src 'unsafe-inline' https://cdn.jsdelivr.net",
+        "style-src 'unsafe-inline'",
+        "img-src 'self' data:",
+        "font-src 'self' data:",
+        "connect-src 'none'",
+        "frame-ancestors 'none'",
+        "base-uri 'none'",
+        "form-action 'none'",
+      ].join("; "),
+    },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/mcp") return handleMcp(request, env);
+    if (url.pathname.startsWith("/render/")) return handleRender(request, env);
     if (url.pathname === "/health") return new Response("ok");
     if (url.pathname === "/" || url.pathname === "")
       return new Response(INFO_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
