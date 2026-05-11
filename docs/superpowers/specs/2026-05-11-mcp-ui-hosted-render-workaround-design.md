@@ -127,6 +127,16 @@ Garbage paths skip KV lookup via regex guard.
 
 ### 3. `/render/:token` route in `src/index.ts`
 
+**HTML shape contract:** the visualization tools today emit HTML *fragments*
+(no `<!doctype>`, no outer `<html>` / `<head>` / `<body>`) — they are
+strings like `<div class="clinical-context">…<canvas>…<script src=cdn>…`.
+`putRender` stores those fragments verbatim. The `/render/` handler is the
+sole place that wraps a fragment in a full document. This contract is
+enforced by convention (the tools must not pass a full document) and
+verified by the unit test that checks the wrapper produces well-formed
+HTML for a representative fragment.
+
+
 ```ts
 async function handleRender(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
@@ -215,8 +225,12 @@ stripped or auto-collapsed.
 
 ## Error handling
 
-- KV write failure → tool returns error response; no `render_url`.
-  Existing `ui://` resource not emitted either (transactional).
+- KV write failure → degrade gracefully: still emit `content[0]` (the
+  `ui://` resource) and the existing structured fields. Omit `render_url`
+  and `content[1]` (the text link). Log a warning. Rationale:
+  spec-compliant MCP-UI hosts continue to work even if the Prompt-Opinion
+  workaround layer is unavailable; the failure mode never makes things
+  worse than the pre-workaround baseline.
 - `/render/` GET with malformed token → 404 (regex reject, no KV call).
 - `/render/` GET with expired/unknown token → 404 from KV miss.
 - KV eventual-consistency miss within ~1s of write → handler retries once
@@ -267,6 +281,12 @@ stripped or auto-collapsed.
   renders.
 - Same call via Prompt Opinion. Confirm link clickable / copy-pastable.
 - Wait 16 minutes, re-open URL, confirm 404.
+
+## Observability
+
+`/render/` handler logs hit/miss outcomes (token prefix only, never full
+token) via `console.log` so Workers observability captures usage during
+the demo and can surface anomalous miss rates. No new dashboards needed.
 
 ## Out of scope (future work)
 
