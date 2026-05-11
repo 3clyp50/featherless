@@ -1,4 +1,4 @@
-import { env, SELF } from "cloudflare:test";
+import { SELF, env } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 import { newRenderToken, putRender } from "../src/render-store.ts";
 

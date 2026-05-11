@@ -27,14 +27,8 @@ describe("buildRenderArtifacts", () => {
   });
 
   it("returns a render URL and text content item on success", async () => {
-    const result = await buildRenderArtifacts(
-      env.RENDER_CACHE,
-      "https://w.example",
-      "<canvas/>",
-    );
-    expect(result.renderUrl).toMatch(
-      /^https:\/\/w\.example\/render\/[a-f0-9]{64}$/,
-    );
+    const result = await buildRenderArtifacts(env.RENDER_CACHE, "https://w.example", "<canvas/>");
+    expect(result.renderUrl).toMatch(/^https:\/\/w\.example\/render\/[a-f0-9]{64}$/);
     expect(result.textContent).toEqual({
       type: "text",
       text: expect.stringContaining(result.renderUrl as string),

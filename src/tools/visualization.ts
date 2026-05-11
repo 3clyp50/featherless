@@ -6,10 +6,9 @@ import { createUIResource } from "@mcp-ui/server";
  * so the MCP-UI host can render the HTML inside its sidebar / inspector.
  */
 import { z } from "zod";
+import { FHIRError } from "../clients/fhir-client.ts";
 import { getCurrentContext } from "../context.ts";
 import type { Env } from "../env.ts";
-import { FHIRError } from "../clients/fhir-client.ts";
-import { newRenderToken, putRender } from "../render-store.ts";
 import {
   allergySummary,
   bundleToResources,
@@ -21,6 +20,7 @@ import {
   patientSummary,
 } from "../fhir-utils.ts";
 import type { McpServer } from "../mcp/server.ts";
+import { newRenderToken, putRender } from "../render-store.ts";
 import {
   buildLabTrendChart,
   buildMedicationTimeline,
@@ -46,6 +46,16 @@ export interface RenderArtifacts {
   textContent: { type: "text"; text: string } | null;
 }
 
+function escapeHtml(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /**
  * Best-effort: store HTML in KV and produce a clickable link.
  * Returns nulls if RENDER_CACHE is unset or KV write fails — viz tools
@@ -61,9 +71,7 @@ export async function buildRenderArtifacts(
   try {
     await putRender(kv, token, html);
   } catch (e) {
-    console.warn(
-      `[render] put failed: ${e instanceof Error ? e.message : String(e)}`,
-    );
+    console.warn(`[render] put failed: ${e instanceof Error ? e.message : String(e)}`);
     return { renderUrl: null, textContent: null };
   }
   const renderUrl = `${originUrl}/render/${token}`;
@@ -125,7 +133,7 @@ export function registerVisualizationTools(server: McpServer, env: Env): void {
 
         let html: string;
         if (!series.length) {
-          html = `<div style="padding:1rem;color:#64748b;font-family:sans-serif;">No numeric observations found for <code>${loinc_or_test}</code>.</div>`;
+          html = `<div style="padding:1rem;color:#64748b;font-family:sans-serif;">No numeric observations found for <code>${escapeHtml(loinc_or_test)}</code>.</div>`;
         } else {
           const testLabel = (observations[0]?.test as string) || loinc_or_test;
           html = buildLabTrendChart(testLabel, series, normalRange);

@@ -16,8 +16,8 @@ import {
   isJSONRPCRequest,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Env } from "./env.ts";
-import { SERVER_NAME, SERVER_VERSION, buildServer } from "./server.ts";
 import { getRender } from "./render-store.ts";
+import { SERVER_NAME, SERVER_VERSION, buildServer } from "./server.ts";
 
 export type { Env };
 

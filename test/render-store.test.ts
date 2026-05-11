@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
 import { env } from "cloudflare:test";
+import { describe, expect, it, vi } from "vitest";
 import { getRender, newRenderToken, putRender } from "../src/render-store.ts";
 
 describe("newRenderToken", () => {
