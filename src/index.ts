@@ -138,14 +138,12 @@ async function handleRender(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const token = url.pathname.slice("/render/".length);
 
-  let body = await getRender(env.RENDER_CACHE, token);
-  if (body === null) {
-    // KV is eventually consistent; tolerate ~1s replication lag on first hit.
-    await new Promise((r) => setTimeout(r, 500));
-    body = await getRender(env.RENDER_CACHE, token);
-  }
+  const body = await getRender(env.RENDER_CACHE, token);
   if (body === null) {
     console.warn(`[render] miss token=${token.slice(0, 8)}…`);
+    // KV is eventually consistent; on the rare race where a freshly-written
+    // token is read before propagation, the user can refresh. Avoiding an
+    // in-handler sleep keeps every 404 cheap (DoS-resistant).
     return new Response("Not found or expired", { status: 404 });
   }
 
@@ -164,6 +162,21 @@ async function handleRender(request: Request, env: Env): Promise<Response> {
       "Cache-Control": "no-store, private",
       "X-Robots-Tag": "noindex, nofollow",
       "Referrer-Policy": "no-referrer",
+      "X-Content-Type-Options": "nosniff",
+      // Restrict what the rendered fragment may load/execute. Chart.js loads
+      // from jsdelivr; init scripts are inline (so 'unsafe-inline' required).
+      // This blocks injected <script src="evil"> and frame embedding.
+      "Content-Security-Policy": [
+        "default-src 'none'",
+        "script-src 'unsafe-inline' https://cdn.jsdelivr.net",
+        "style-src 'unsafe-inline'",
+        "img-src 'self' data:",
+        "font-src 'self' data:",
+        "connect-src 'none'",
+        "frame-ancestors 'none'",
+        "base-uri 'none'",
+        "form-action 'none'",
+      ].join("; "),
     },
   });
 }
