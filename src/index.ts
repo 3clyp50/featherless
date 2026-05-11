@@ -17,6 +17,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Env } from "./env.ts";
 import { SERVER_NAME, SERVER_VERSION, buildServer } from "./server.ts";
+import { getRender } from "./render-store.ts";
 
 export type { Env };
 
@@ -130,10 +131,48 @@ async function handleMcp(request: Request, env: Env): Promise<Response> {
   return runWithContext(ctx, () => bridge.handleRequest(request));
 }
 
+async function handleRender(request: Request, env: Env): Promise<Response> {
+  if (!env.RENDER_CACHE) {
+    return new Response("Render cache not configured", { status: 503 });
+  }
+  const url = new URL(request.url);
+  const token = url.pathname.slice("/render/".length);
+
+  let body = await getRender(env.RENDER_CACHE, token);
+  if (body === null) {
+    // KV is eventually consistent; tolerate ~1s replication lag on first hit.
+    await new Promise((r) => setTimeout(r, 500));
+    body = await getRender(env.RENDER_CACHE, token);
+  }
+  if (body === null) {
+    console.warn(`[render] miss token=${token.slice(0, 8)}…`);
+    return new Response("Not found or expired", { status: 404 });
+  }
+
+  console.log(`[render] hit token=${token.slice(0, 8)}…`);
+
+  const doc = `<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Clinical Dashboard</title>
+<meta name="referrer" content="no-referrer">
+<style>body{margin:0;font:14px/1.5 -apple-system,sans-serif;background:#f8fafc}</style>
+</head><body>${body}</body></html>`;
+
+  return new Response(doc, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store, private",
+      "X-Robots-Tag": "noindex, nofollow",
+      "Referrer-Policy": "no-referrer",
+    },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/mcp") return handleMcp(request, env);
+    if (url.pathname.startsWith("/render/")) return handleRender(request, env);
     if (url.pathname === "/health") return new Response("ok");
     if (url.pathname === "/" || url.pathname === "")
       return new Response(INFO_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
