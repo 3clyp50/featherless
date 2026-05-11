@@ -25,6 +25,32 @@ Featherless is a Prompt Opinion Marketplace healthcare agent that turns a synthe
 | Hackathon | Agents Assemble: The Healthcare AI Endgame Challenge |
 | Data posture | Synthetic FHIR only, no PHI, no token storage |
 
+## How To Test
+
+Open the primary Prompt Opinion Marketplace listing, start the Featherless Visit Assistant, enable FHIR Context, choose a synthetic patient, and turn Show Tool Calls on.
+
+Primary listing:
+
+```text
+https://app.promptopinion.ai/marketplace/agent/019e13c6-7704-75aa-be80-8ef528a3cb7f
+```
+
+Try these judge-style prompts:
+
+```text
+Create an after-visit summary for this patient in plain English. Include what changed today, medication instructions, warning signs, follow-up steps, and where the information came from.
+```
+
+```text
+Can you make the same after-visit summary for this patient in Spanish? Keep it simple, and include medicine instructions, warning signs, follow-up steps, and sources.
+```
+
+```text
+Can you show me a visual dashboard for this patient with charts and safety highlights? If the dashboard opens as a link, put that link first, then briefly explain what I should look at.
+```
+
+Expected result: the BYO agent consults the external `featherless` A2A agent, the orchestrator calls the live MCP Worker, and the response shows readable patient guidance, citations or grounding details, and an auditable tool trace. For the dashboard prompt, Featherless returns the MCP-UI `ui://` resource plus a short-lived hosted `/render/<token>` URL that can be opened directly from the response.
+
 ## What It Does
 
 For the current patient in Prompt Opinion, Featherless:
@@ -86,17 +112,9 @@ Tool source lives under [`src/tools`](src/tools). The A2A orchestrator lives in 
 
 ## MCP-UI Bonus
 
-The MCP server also exposes visualization tools that return MCP-UI `ui://` resources. The dashboard HTML loads Chart.js inside the rendered iframe; the Worker emits HTML and does not execute chart code.
+The MCP server also exposes visualization tools that return MCP-UI `ui://` resources. The dashboard HTML loads Chart.js in the browser; the Worker emits HTML and does not execute chart code.
 
-Prompt Opinion currently exposes the MCP-UI payload as raw tool output rather than rendering the iframe. Featherless also emits a short-lived hosted `/render/<token>` URL for that same dashboard, so the demo can open the live visualization from Prompt Opinion while Agent Zero remains the iframe-rendering bonus path.
-
-Showcase patient for that clip:
-
-```text
-Patient: Elena Carter
-FHIR id: featherless-showcase-carter-elena
-FHIR server: https://hapi.fhir.org/baseR4
-```
+Prompt Opinion currently exposes the MCP-UI payload as tool output rather than natively rendering the iframe. Featherless also emits a short-lived hosted `/render/<token>` URL for that same dashboard, so the demo can open the live visualization directly from the Prompt Opinion response.
 
 ## Demo Data
 
@@ -152,8 +170,8 @@ Recorded final engineering gate:
 - Cloudflare MCP Worker deployed.
 - Cloudflare A2A orchestrator deployed.
 - Prompt Opinion MCP, External A2A Agent, and BYO Agent published.
-- Latest recorded local test suite: 56/56 passing after the encounter fallback fix.
-- Agent Zero MCP-UI proof rendered the live `ui://` dashboard for the rich showcase patient.
+- Latest recorded local test suite: 70/70 passing after the hosted render bridge.
+- Prompt Opinion dashboard prompt returns a hosted MCP-UI render URL for the live visualization.
 
 Submission helpers:
 - [`docs/publish-readiness.md`](docs/publish-readiness.md) - Marketplace and submission checklist.
