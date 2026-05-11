@@ -6,6 +6,7 @@
 const PREFIX = "render:";
 export const RENDER_TTL_SECONDS = 900;
 
+/** 256 bits of entropy as 64-char lowercase hex. Bearer capability — keep secret. */
 export function newRenderToken(): string {
   const buf = new Uint8Array(32);
   crypto.getRandomValues(buf);
@@ -14,6 +15,7 @@ export function newRenderToken(): string {
 
 const TOKEN_RE = /^[a-f0-9]{64}$/;
 
+/** Store HTML fragment under `render:<token>` with the standard 15-min TTL. */
 export async function putRender(
   kv: KVNamespace,
   token: string,
@@ -22,6 +24,7 @@ export async function putRender(
   await kv.put(PREFIX + token, html, { expirationTtl: RENDER_TTL_SECONDS });
 }
 
+/** Read HTML fragment by token. Returns null for malformed tokens without touching KV. */
 export async function getRender(
   kv: KVNamespace,
   token: string,
