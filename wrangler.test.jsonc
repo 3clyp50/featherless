@@ -13,5 +13,8 @@
     "FEATHERLESS_DEV_MODE": "0",
     "MEM0_DISABLED": "1",
     "WRITE_BACK": "0"
-  }
+  },
+  "kv_namespaces": [
+    { "binding": "RENDER_CACHE", "id": "test-render-cache" }
+  ]
 }
