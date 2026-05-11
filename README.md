@@ -88,7 +88,7 @@ Tool source lives under [`src/tools`](src/tools). The A2A orchestrator lives in 
 
 The MCP server also exposes visualization tools that return MCP-UI `ui://` resources. The dashboard HTML loads Chart.js inside the rendered iframe; the Worker emits HTML and does not execute chart code.
 
-Prompt Opinion currently exposes the MCP-UI payload as raw tool output rather than rendering the iframe. For the purpose of this demo, the same live MCP resource is rendered in Agent Zero, which we used to build part of the Featherless stack, as an iframe dashboard.
+Prompt Opinion currently exposes the MCP-UI payload as raw tool output rather than rendering the iframe. Featherless also emits a short-lived hosted `/render/<token>` URL for that same dashboard, so the demo can open the live visualization from Prompt Opinion while Agent Zero remains the iframe-rendering bonus path.
 
 Showcase patient for that clip:
 
@@ -98,18 +98,12 @@ FHIR id: featherless-showcase-carter-elena
 FHIR server: https://hapi.fhir.org/baseR4
 ```
 
-Reload the showcase data if public HAPI resets:
-
-```bash
-npm run load:showcase
-```
-
 ## Demo Data
 
 Featherless uses two synthetic data paths:
 
 - **Prompt Opinion synthetic patients** for the main Marketplace/A2A/MCP proof.
-- **Hand-crafted synthetic HAPI data** for local repeatability and the MCP-UI showcase.
+- **Public synthetic HAPI data** for the optional MCP-UI showcase clip.
 
 The original hero patient is Mrs. María García, a synthetic cardiology follow-up patient with a new PRN furosemide instruction, labs due soon, an echo to schedule, and care-team follow-up tasks. See [`HERO_PATIENT.md`](HERO_PATIENT.md).
 
