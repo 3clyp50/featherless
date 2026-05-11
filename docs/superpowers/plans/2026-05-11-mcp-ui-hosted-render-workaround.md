@@ -21,12 +21,16 @@
 | `src/env.ts` | Modify | Add optional `RENDER_CACHE?: KVNamespace` to `Env` |
 | `src/render-store.ts` | Create | Token generator + KV put/get (single-purpose module) |
 | `src/index.ts` | Modify | Add `/render/<token>` route handler |
-| `src/tools/visualization.ts` | Modify | Take `env` arg; emit text + `render_url`; degrade if KV unset |
+| `src/tools/visualization.ts` | Modify | Take `env` arg; expose `buildRenderArtifacts`; emit text + `render_url`; degrade if KV unset |
 | `src/server.ts` | Modify | Pass `env` to `registerVisualizationTools` |
+| `src/context.ts` | Modify | Add `originUrl` to `SharpContext` and `parseSharpHeaders` |
 | `test/render-store.test.ts` | Create | Unit tests for token + put/get + malformed-token reject |
 | `test/render-route.test.ts` | Create | Route tests: 404 garbage, 404 missing, 200 + correct headers |
+| `test/visualization-render.test.ts` | Create | `buildRenderArtifacts` unit tests (success + null-KV + failing-KV) |
+| `test/render-e2e.test.ts` | Create | Artifact-to-route handoff smoke |
+| `MCP-UI_WORKAROUND.md` | Modify | Add "Status (2026-05-11)" note |
 
-Total: 2 new modules, 6 modified files, 2 new test files.
+Total: 1 new module, 7 modified files, 4 new test files.
 
 ---
 
@@ -88,7 +92,17 @@ The `id` is arbitrary under `@cloudflare/vitest-pool-workers` — Miniflare prov
 Run: `npx wrangler types --config wrangler.jsonc`
 Expected: completes without error; regenerates `worker-configuration.d.ts` if present.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Confirm no placeholder IDs remain**
+
+Run:
+
+```bash
+grep -n '<PASTE-' wrangler.jsonc
+```
+
+Expected: no output. If any line still contains `<PASTE-…>` text, replace it with the real ID from Step 1 before committing.
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add wrangler.jsonc wrangler.test.jsonc
@@ -292,15 +306,17 @@ import { describe, expect, it } from "vitest";
 import { newRenderToken, putRender } from "../src/render-store.ts";
 
 describe("GET /render/:token", () => {
-  it("returns 404 for malformed token", async () => {
+  it("returns 404 with our body text for malformed token", async () => {
     const res = await SELF.fetch("https://example.com/render/not-hex");
     expect(res.status).toBe(404);
+    expect(await res.text()).toBe("Not found or expired");
   });
 
   it("returns 404 for unknown token", async () => {
     const token = "0".repeat(64);
     const res = await SELF.fetch(`https://example.com/render/${token}`);
     expect(res.status).toBe(404);
+    expect(await res.text()).toBe("Not found or expired");
   });
 
   it("returns 200 with stored HTML, security headers, and doctype", async () => {
@@ -655,7 +671,9 @@ git commit -m "feat(context): expose request originUrl on SharpContext"
 
 #### Sub-step B: Update each visualization tool
 
-- [ ] **Step 4: Update `visualize_lab_trend`, `visualize_vitals`, `visualize_patient_dashboard`**
+The file already defines `type Dict = Record<string, unknown>` at the top, so the snippets below use that type directly.
+
+- [ ] **Step 4: Add `getCurrentContext` import**
 
 At the top of `src/tools/visualization.ts`, add:
 
@@ -663,7 +681,9 @@ At the top of `src/tools/visualization.ts`, add:
 import { getCurrentContext } from "../context.ts";
 ```
 
-For each of the three tools, after the HTML string is built and before the existing `return { content: [uiResource(uri, html)], ... }`, replace the return statement with:
+- [ ] **Step 5: Update `visualize_lab_trend` return shape**
+
+Locate the existing return statement (currently `return { content: [uiResource(uri, html)], patient_id: pid, test: loinc_or_test, data_points: series.length };`). Replace it with:
 
 ```ts
 const origin = getCurrentContext().originUrl ?? "";
@@ -675,21 +695,71 @@ if (artifacts.textContent) content.push(artifacts.textContent);
 return {
   content,
   render_url: artifacts.renderUrl,
-  // ...existing fields (patient_id, data_points, etc.)
+  patient_id: pid,
+  test: loinc_or_test,
+  data_points: series.length,
 };
 ```
 
-Three call sites to update:
-1. `visualize_lab_trend` — keep `patient_id`, `test`, `data_points`.
-2. `visualize_vitals` — keep `patient_id`, `data_points`.
-3. `visualize_patient_dashboard` — keep `patient_id`, `patient_name`, `alerts_count`, `data_summary`.
+Run: `npx vitest run`
+Expected: all tests still pass.
 
-- [ ] **Step 5: Run full test suite**
+- [ ] **Step 6: Update `visualize_vitals` return shape**
+
+Replace its return statement with:
+
+```ts
+const origin = getCurrentContext().originUrl ?? "";
+const artifacts = await buildRenderArtifacts(env.RENDER_CACHE, origin, html);
+
+const content: Dict[] = [uiResource(uri, html)];
+if (artifacts.textContent) content.push(artifacts.textContent);
+
+return {
+  content,
+  render_url: artifacts.renderUrl,
+  patient_id: pid,
+  data_points: vitals.length,
+};
+```
 
 Run: `npx vitest run`
-Expected: all tests pass. Existing visualization tests (if any) should still pass because `content[0]` is unchanged; new field `render_url` is additive.
+Expected: all tests still pass.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Update `visualize_patient_dashboard` return shape**
+
+Replace its return statement with:
+
+```ts
+const origin = getCurrentContext().originUrl ?? "";
+const artifacts = await buildRenderArtifacts(env.RENDER_CACHE, origin, body);
+
+const content: Dict[] = [uiResource(uri, body)];
+if (artifacts.textContent) content.push(artifacts.textContent);
+
+return {
+  content,
+  render_url: artifacts.renderUrl,
+  patient_id: pid,
+  patient_name: demographics.name ?? null,
+  alerts_count: alerts.length,
+  data_summary: {
+    allergies: allergies.length,
+    medications: medications.length,
+    problems: problems.length,
+    immunizations: immunizations.length,
+    labs: labs.length,
+    encounters: encounters.length,
+  },
+};
+```
+
+Note: this tool uses `body` (the assembled HTML string built earlier) rather than `html`. Pass `body` to both `uiResource` and `buildRenderArtifacts` so the hosted URL renders the same composite document.
+
+Run: `npx vitest run`
+Expected: all tests still pass.
+
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/tools/visualization.ts
@@ -796,7 +866,6 @@ Fall back: confirm `render_url` is visible in any structured/JSON view Prompt Op
 
 **Files:**
 - Modify: `MCP-UI_WORKAROUND.md` (add note that server-side workaround is shipped)
-- Modify: `README.md` (if it documents tool output shape, mention `render_url`)
 
 - [ ] **Step 1: Add a short "Workaround Status" section to `MCP-UI_WORKAROUND.md`**
 
