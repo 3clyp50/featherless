@@ -6,6 +6,7 @@ import { createUIResource } from "@mcp-ui/server";
  * so the MCP-UI host can render the HTML inside its sidebar / inspector.
  */
 import { z } from "zod";
+import type { Env } from "../env.ts";
 import { FHIRError } from "../clients/fhir-client.ts";
 import {
   allergySummary,
@@ -43,7 +44,7 @@ function safeResources<T>(value: PromiseSettledResult<T>): Dict[] {
   return bundleToResources(value.value as Dict);
 }
 
-export function registerVisualizationTools(server: McpServer): void {
+export function registerVisualizationTools(server: McpServer, env: Env): void {
   // ====
   // Single-test lab trend chart
   // ====
