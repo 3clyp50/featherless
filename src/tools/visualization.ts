@@ -56,7 +56,7 @@ export async function buildRenderArtifacts(
   originUrl: string,
   html: string,
 ): Promise<RenderArtifacts> {
-  if (!kv) return { renderUrl: null, textContent: null };
+  if (!kv || !originUrl) return { renderUrl: null, textContent: null };
   const token = newRenderToken();
   try {
     await putRender(kv, token, html);

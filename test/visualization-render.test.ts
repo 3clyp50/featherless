@@ -9,6 +9,12 @@ describe("buildRenderArtifacts", () => {
     expect(result.textContent).toBeNull();
   });
 
+  it("returns null artifacts when originUrl is empty", async () => {
+    const result = await buildRenderArtifacts(env.RENDER_CACHE, "", "<div/>");
+    expect(result.renderUrl).toBeNull();
+    expect(result.textContent).toBeNull();
+  });
+
   it("returns null artifacts when KV write fails", async () => {
     const failingKv = {
       put: async () => {
