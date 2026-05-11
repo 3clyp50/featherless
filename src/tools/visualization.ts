@@ -6,6 +6,7 @@ import { createUIResource } from "@mcp-ui/server";
  * so the MCP-UI host can render the HTML inside its sidebar / inspector.
  */
 import { z } from "zod";
+import { getCurrentContext } from "../context.ts";
 import type { Env } from "../env.ts";
 import { FHIRError } from "../clients/fhir-client.ts";
 import { newRenderToken, putRender } from "../render-store.ts";
@@ -131,8 +132,15 @@ export function registerVisualizationTools(server: McpServer, env: Env): void {
         }
 
         const uri = `ui://featherless/lab-trend/${pid}/${Math.floor(Date.now() / 1000)}`;
+        const origin = getCurrentContext().originUrl ?? "";
+        const artifacts = await buildRenderArtifacts(env.RENDER_CACHE, origin, html);
+
+        const content: Dict[] = [uiResource(uri, html)];
+        if (artifacts.textContent) content.push(artifacts.textContent);
+
         return {
-          content: [uiResource(uri, html)],
+          content,
+          render_url: artifacts.renderUrl,
           patient_id: pid,
           test: loinc_or_test,
           data_points: series.length,
@@ -171,8 +179,15 @@ export function registerVisualizationTools(server: McpServer, env: Env): void {
         const vitals = bundleToResources(bundle).map(observationSummary);
         const html = buildVitalsDashboard(vitals);
         const uri = `ui://featherless/vitals/${pid}/${Math.floor(Date.now() / 1000)}`;
+        const origin = getCurrentContext().originUrl ?? "";
+        const artifacts = await buildRenderArtifacts(env.RENDER_CACHE, origin, html);
+
+        const content: Dict[] = [uiResource(uri, html)];
+        if (artifacts.textContent) content.push(artifacts.textContent);
+
         return {
-          content: [uiResource(uri, html)],
+          content,
+          render_url: artifacts.renderUrl,
           patient_id: pid,
           data_points: vitals.length,
         };
@@ -324,8 +339,15 @@ export function registerVisualizationTools(server: McpServer, env: Env): void {
       }
 
       const uri = `ui://featherless/dashboard/${pid}/${Math.floor(Date.now() / 1000)}`;
+      const origin = getCurrentContext().originUrl ?? "";
+      const artifacts = await buildRenderArtifacts(env.RENDER_CACHE, origin, body);
+
+      const content: Dict[] = [uiResource(uri, body)];
+      if (artifacts.textContent) content.push(artifacts.textContent);
+
       return {
-        content: [uiResource(uri, body)],
+        content,
+        render_url: artifacts.renderUrl,
         patient_id: pid,
         patient_name: demographics.name ?? null,
         alerts_count: alerts.length,
