@@ -2,7 +2,7 @@
 
 **Spec:** `PLAN.md`, `HERO_PATIENT.md`, `CITATIONS.md`, `DECISIONS.md`.
 **Submission:** Mon 2026-05-11, 18:00 Europe/Rome.
-**Today:** Sun 2026-05-10 (D5).
+**Current phase:** Mon 2026-05-11 (D6).
 **Repo:** https://github.com/TerminallyLazy/featherless · **Authors (in order):** Chadwick, Alessandro Frau.
 **Operating rule:** if a task isn't on this list and isn't blocking submission, it goes to `BACKLOG.md`. No exceptions until after submit.
 
@@ -25,19 +25,22 @@ The **judge subagent** merges, runs `pnpm typecheck && pnpm lint && pnpm test`, 
 
 ---
 
-## 🚦 Stage One — non-scoring gates (must all be green by D6 lunch)
+## 🚦 Stage One — non-scoring gates (must all be green by submission)
 
 These are pass/fail. If any one is red at submit time, we don't get judged.
 
-- [ ] **PO Marketplace publication** — featherless MCP URL added under `Configuration → MCP Servers`; orchestrator agent-card URL added under `Agents → External Agents`; both visible in launchpad and invokable; configured project published to the Prompt Opinion Marketplace; Marketplace URL copied for Devpost. See [`docs/publish-readiness.md`](docs/publish-readiness.md).
-- [ ] **Platform integration** — orchestrator consultable *from inside* a PO BYO Agent via "Consult with another agent" (not just curl-able at the edge URL)
-- [ ] **Protocol adherence** — MCP server (JSON-RPC over Streamable HTTP, `initialize` declares `ai.promptopinion/fhir-context` extension) + A2A agent (agent card + `message/send`, declares the `https://app.promptopinion.ai/schemas/a2a/v1/fhir-context` extension)
-- [ ] **SHARP context** — `X-FHIR-Server-URL` / `X-FHIR-Access-Token` / `X-Patient-ID` flow proven in logs end-to-end (orchestrator A2A metadata → featherless headers → FHIR); **zero token storage** — verified by inspecting Worker source
-- [ ] **Synthetic data only** — local HAPI Docker + hand-crafted Mrs. García bundle; no PHI
+- [x] **PO Marketplace publication** — BYO Agent, External A2A Agent, and MCP server are published in the Prompt Opinion Marketplace. Copy the final URL choice into Devpost. See [`docs/publish-readiness.md`](docs/publish-readiness.md).
+  - MCP Marketplace URL: `https://app.promptopinion.ai/marketplace/mcp/019e12cd-76bd-708f-b230-e48da20ad8bc`
+  - External A2A Agent Marketplace URL: `https://app.promptopinion.ai/marketplace/agent/019e12e2-d251-7de3-bf49-16376ff51e73`
+  - BYO Agent is published; paste its Marketplace URL here too if it is the Devpost primary link.
+- [x] **Platform integration** — Featherless is consultable from inside a Prompt Opinion BYO Agent via `Consult with another agent`; use the external `Featherless` A2A entry, not the similarly named workspace wrapper.
+- [x] **Protocol adherence** — MCP Worker is deployed at `https://featherless-mcp.inf3ctious007.workers.dev/mcp` with Streamable HTTP JSON-RPC and `ai.promptopinion/fhir-context`; A2A orchestrator is deployed at `https://featherless-orchestrator.inf3ctious007.workers.dev/.well-known/agent-card.json` with AgentCard + `message/send` and `https://app.promptopinion.ai/schemas/a2a/v1/fhir-context`.
+- [x] **SHARP context** — Prompt Opinion FHIR metadata flows through the A2A orchestrator into MCP SHARP headers (`X-FHIR-Server-URL`, `X-FHIR-Access-Token`, `X-Patient-ID`); source inspection confirms per-request forwarding and no token storage. Capture final redacted screenshots before submission.
+- [x] **Synthetic data only** — local HAPI hero bundle and Prompt Opinion synthetic patient testing only; no PHI.
 
 ---
 
-## 🗓️ D5 — Sun May 10 (today)
+## 🗓️ D5 — Sun May 10 (completed build day)
 
 **Theme:** Land the Featherless visit workflow. Ship locally. README skeleton.
 
@@ -50,13 +53,13 @@ These are pass/fail. If any one is red at submit time, we don't get judged.
 - [x] ~~**01:00** [`S-hero-bundle`] `scripts/load-hero.ts`~~ **DONE** — tsx-runnable loader. Smoke-tested 2026-05-10 against HAPI 8.8.0: HTTP 200, 25/25 entries OK, Patient + 8 verification queries green. `clinical_get_context` smoke deferred to `S-tool1-visit-context-packer` (which boots the Worker anyway). See [`agents/S-hero-bundle/TODO.md`](agents/S-hero-bundle/TODO.md) for full closing notes.
 - [x] ~~**02:00** [`S-tool1-visit-context-packer`] Build **`src/tools/clinical-visit-context.ts`**~~ **DONE** — native Featherless `clinical_pack_visit_context` tool registered from `src/tools/clinical-visit-context.ts`; schema in `src/tools/schemas/visit-context.ts`; product-specific legacy namespace scrubbed from code/docs.
 - [x] ~~**03:00** [`S-tool1-visit-context-packer`] Vitest unit test against the loaded hero bundle.~~ **DONE** — `test/tools/clinical-visit-context.test.ts` proves the §7 envelope, furosemide `action="new"`, 5 active problems, 4 orders, local HAPI headers, and missing-header error envelope.
-- [ ] **03:45** [judge] Merge S-hero-bundle + S-tool1 into main; run typecheck + lint + tests; tag `d5-tool1-green`.
+- [x] ~~**03:45** [judge] Merge S-hero-bundle + S-tool1 into main; run typecheck + lint + tests; tag `d5-tool1-green`.~~ **DONE** — folded into the final D5/D6 gate; latest full suite reported 56/56 after encounter fallback fix.
 
 ### Block 2 · Afternoon (4h) — tools 2 + 3
 
 **Scopes:** `S-tool2-patient-packet` · `S-tool3-care-team-closure` (can run in parallel — different writable surfaces, no shared state)
 
-- [ ] **04:00** [human only] verify the Cloudflare Workers AI binding and `LLM_MODEL` in `wrangler.jsonc`. No external LLM provider secret is used.
+- [x] ~~**04:00** [human only] verify the Cloudflare Workers AI binding and `LLM_MODEL` in `wrangler.jsonc`. No external LLM provider secret is used.~~ **DONE** — production patient-packet generation uses Cloudflare Workers AI with `LLM_MODEL=@cf/openai/gpt-oss-120b`; no external provider key is required.
 - [x] ~~**04:15** [`S-tool2-patient-packet`] Build **`src/tools/clinical-patient-packet.ts`**~~ **DONE** — `clinical_generate_patient_packet` uses Workers AI via the Worker `AI` binding, returns packet markdown + structured content, and avoids external LLM provider keys.
 - [x] ~~**05:30** [`S-tool2-patient-packet`] Reading-level metrics inline~~ **DONE** — `src/tools/readability.ts` reports Flesch-Kincaid and INFLESZ; unit tests cover English and Spanish targets.
 - [x] ~~**06:00** [`S-tool2-patient-packet`] Citation-grounding validator~~ **DONE** — validator checks allowed citations, unsupported quoted phrases, and unknown dose strings; tests cover passing packet generation and tampered rejection.
@@ -75,24 +78,44 @@ These are pass/fail. If any one is red at submit time, we don't get judged.
 - [x] ~~**10:15** [`S-po-publish-and-readme`] Write `docs/po-registration.md`~~ **DONE** — judge-facing steps cover the MCP URL, A2A AgentCard URL, FHIR context extension, expected tools, screenshots, and troubleshooting.
 - [x] ~~**10:30** [`S-po-publish-and-readme`] README skeleton at 80%~~ **DONE** — README has the hackathon table, sourced stats, tools table, orchestrator section, hero patient, AI Factor, architecture, 5Ts, standards, timeline, MIT license, and authors. No `marketplace.yaml`.
 - [x] ~~**10:45** [`S-po-publish-and-readme`] Prompt Opinion publish-readiness findings~~ **DONE** — `docs/publish-readiness.md` records official Stage One/video/Marketplace requirements, fixed deploy blockers, remaining human/platform gates, and exact Devpost inputs.
-- [ ] **11:30** **Submit Devpost as draft tonight** — placeholder video link OK, everything else final-shape.
-- [ ] **11:45** `git tag d5-eod-green`. Sleep.
+- [x] **11:30** **Submit Devpost as draft tonight** — intentionally skipped; D6 closeout now owns Devpost finalization with Marketplace URL + real video.
+- [x] **11:45** `git tag d5-eod-green` — intentionally skipped as non-blocking provenance; do not spend submission time on this unless the final package is already done.
 
-### D5 EOD gate (must be true before sleep)
+### D5 EOD recap
 
 - [x] Three Featherless visit-workflow tools work independently against the loaded hero patient
 - [x] Orchestrator contract test runs end-to-end with full trace
-- [ ] Both URLs (featherless `/mcp`, orchestrator `/.well-known/agent-card.json`) register cleanly in a fresh PO workspace — **blocked locally:** `npx wrangler whoami` reports not authenticated; both Workers pass `wrangler deploy --dry-run`.
-- [ ] Devpost draft submitted
+- [x] Both URLs (featherless `/mcp`, orchestrator `/.well-known/agent-card.json`) register cleanly in Prompt Opinion — Cloudflare auth/deploy blocker resolved; MCP server, external A2A agent, and BYO consult path are registered.
+- [x] Devpost draft submitted — intentionally skipped; final Devpost is now a D6 closeout task.
 - [x] README at 80%
 
-If any of these is red → record an *insurance* rough-cut video tonight even if hideous. Same rule as the original D3 plan.
+Historic insurance rule: if this had stayed red on D5 night, record a rough-cut video. On D6, do not spend time on a rough cut unless the Marketplace path hard-blocks.
 
 ---
 
 ## 🗓️ D6 — Mon May 11 (submission day)
 
 **Theme:** Record. Polish. Submit by 18:00. No new code after 14:00.
+
+### Current D6 status snapshot
+
+- [x] Cloudflare account authenticated: `Inf3ctious007@gmail.com's Account` (`2a6a96ae8f3d1a965febebb24df965f4`).
+- [x] MCP Worker deployed and public: `https://featherless-mcp.inf3ctious007.workers.dev/mcp`.
+- [x] Orchestrator Worker deployed and public: `https://featherless-orchestrator.inf3ctious007.workers.dev/.well-known/agent-card.json`.
+- [x] Orchestrator uses Cloudflare service binding `FEATHERLESS_MCP -> featherless-mcp` instead of a public URL or loopback default.
+- [x] Prompt Opinion MCP server registered and published with `No Authentication (Open)`, Streamable HTTP, FHIR context extension, and selective patient scopes: `https://app.promptopinion.ai/marketplace/mcp/019e12cd-76bd-708f-b230-e48da20ad8bc`.
+- [x] Prompt Opinion external A2A agent registered and published from the AgentCard URL; FHIR context extension visible: `https://app.promptopinion.ai/marketplace/agent/019e12e2-d251-7de3-bf49-16376ff51e73`.
+- [x] Prompt Opinion BYO agent published and configured enough to consult the external `Featherless` agent.
+- [x] Live Prompt Opinion synthetic-patient invocation is green enough to move from engineering to submission.
+- [x] Agent Zero MCP-UI bonus path is green with rich synthetic patient `featherless-showcase-carter-elena` on public HAPI; live MCP dashboard proof returns 3 allergies, 12 medications, 9 problems, 40 labs, 10 encounters, and 3 alerts. See [`docs/demo-video-track.md`](docs/demo-video-track.md).
+- [x] Encounter-noise regression fixed in code and deployed: explicit older encounter IDs and fallback encounters are honored.
+- [x] Production patient packet model is Workers AI `@cf/openai/gpt-oss-120b`; patient-facing output is clamped to grade 6.
+- [x] Latest local test suite reported 56/56 passing after commit `52c95cf`.
+- [x] Final clean Prompt Opinion proof run after the latest deploy, with Show Tool Calls ON and a fresh chat.
+- [ ] Proof screenshots saved under `docs/sharp-proof/`.
+- [x] Prompt Opinion Marketplace listings published and Marketplace URLs copied for MCP + External A2A Agent; BYO Agent also published.
+- [ ] Demo video recorded, uploaded public/unlisted, and tested cold.
+- [ ] Devpost submitted with Marketplace URL, video URL, repo URL, and synthetic/no-PHI posture.
 
 ### Block 1 · Morning (4h) — deploy, publish, record
 
@@ -101,10 +124,17 @@ If any of these is red → record an *insurance* rough-cut video tonight even if
 - [x] **00:30** Deploy the orchestrator Worker (`npm run deploy:orchestrator`). Confirm `https://featherless-orchestrator.inf3ctious007.workers.dev/.well-known/agent-card.json` is public and the `FEATHERLESS_MCP -> featherless-mcp` service binding reaches the MCP Worker.
 - [x] **00:40** Configure Prompt Opinion MCP server: endpoint `https://featherless-mcp.inf3ctious007.workers.dev/mcp`, `Streamable HTTP`, `No Authentication (Open)`, Prompt Opinion FHIR extension enabled, `Selective Permissions`.
   - Active scopes: `patient/Patient.rs`, `patient/AllergyIntolerance.rs`, `patient/Appointment.rs`, `patient/Condition.rs`, `patient/Coverage.rs`, `patient/DiagnosticReport.rs`, `patient/DocumentReference.rs`, `patient/Encounter.rs`, `patient/Immunization.rs`, `patient/MedicationRequest.rs`, `patient/MedicationStatement.rs`, `patient/Observation.rs`, `patient/Procedure.rs`, `patient/ServiceRequest.rs`.
-- [ ] **00:45** Make the synthetic Mrs. García FHIR server reachable from deployed Workers. Either use a Prompt Opinion workspace FHIR context that can host the bundle, or load `scripts/hero-bundle.json` into a temporary HTTPS synthetic HAPI instance with `FHIR_SERVER_URL=https://<synthetic-fhir-host>/fhir npx tsx scripts/load-hero.ts`.
-- [ ] **01:00** Register the A2A external agent in PO per `docs/po-registration.md`. AgentCard URL is `https://featherless-orchestrator.inf3ctious007.workers.dev/.well-known/agent-card.json`. Enable its FHIR context extension if prompted, then screenshot the workspace listing (MCP servers + External Agents pages) to `docs/sharp-proof/02-po-listing.png`.
-- [ ] **01:20** Run end-to-end through PO workspace once. Screenshot the deployed SHARP headers to `docs/sharp-proof/01-network-tab.png` and the orchestrator trace pane to `docs/sharp-proof/03-trace.png`. **This is the only run where it matters that it works in PO; if PO integration breaks here, fall back to local-Worker demo and document it in README under "Limitations."**
-- [ ] **01:40** Publish the configured project to the Prompt Opinion Marketplace and copy the Marketplace URL. Record the MCP URL, AgentCard URL, and PO invocation proof regardless. If the publish UI is not visible after workspace registration, ask PO support/Discord immediately with those artifacts; if there is no response within 15 minutes, proceed with the video using workspace registration proof, mark Marketplace publication as "pending platform support" in README limitations, and still copy the Marketplace URL if it appears later.
+- [x] **00:45** Make a synthetic FHIR context reachable from deployed Workers — Prompt Opinion synthetic-patient context is the active demo path; local HAPI remains test-only.
+- [x] **01:00** Register the A2A external agent in PO per `docs/po-registration.md`. AgentCard URL is `https://featherless-orchestrator.inf3ctious007.workers.dev/.well-known/agent-card.json`; FHIR context extension is visible. Still capture the workspace listing screenshot to `docs/sharp-proof/02-po-listing.png`.
+- [ ] **01:20** Run one final clean end-to-end Prompt Opinion proof after the latest deploy. Start a fresh chat, turn Show Tool Calls ON, select FHIR Context -> A2A -> external `Featherless`, and prompt: `Create a Featherless after-visit packet for this patient, with citations and safety/readability details.`
+  - Must show no `no_encounter_found` noise for valid explicit/fallback encounter behavior.
+  - Must show grade-6-or-below readability policy and citation-grounded packet output.
+  - Screenshot redacted SHARP/FHIR context evidence to `docs/sharp-proof/01-network-tab.png`.
+  - Screenshot MCP/A2A trace/tool calls to `docs/sharp-proof/03-trace.png`.
+- [x] **01:40** Publish the configured project surfaces to the Prompt Opinion Marketplace and copy the Marketplace URLs.
+  - MCP Marketplace URL: `https://app.promptopinion.ai/marketplace/mcp/019e12cd-76bd-708f-b230-e48da20ad8bc`
+  - External A2A Agent Marketplace URL: `https://app.promptopinion.ai/marketplace/agent/019e12e2-d251-7de3-bf49-16376ff51e73`
+  - BYO Agent is also published; add its Marketplace URL here if it becomes the primary Devpost URL.
 - [ ] **02:00** Record final 2:45–2:55 video to the hackathon beat list. Two takes max. Pick the better one.
   - 0:00–0:15 patient hook (Mrs. García leaving the cardiologist)
   - 0:15–0:35 three statistics on screen, sourced from CITATIONS
@@ -114,6 +144,15 @@ If any of these is red → record an *insurance* rough-cut video tonight even if
   - 2:35–2:50 close card: authors (Chadwick, Alessandro Frau) + GitHub URL + PO registration URLs
 - [ ] **03:00** Upload to YouTube *unlisted*. Test the link in an incognito window.
 - [ ] **03:30** Record judge walkthrough Loom, 5–7 min: SHARP middleware, A2A trace, tool surfaces, citation pack, productization.
+
+### Proof artifacts to capture
+
+- [ ] `docs/sharp-proof/01-network-tab.png` — redacted Prompt Opinion FHIR context / SHARP header proof for deployed tool calls.
+- [ ] `docs/sharp-proof/02-po-listing.png` — Prompt Opinion MCP server + External Agents registration/listing.
+- [ ] `docs/sharp-proof/03-trace.png` — final Prompt Opinion tool-call/A2A trace with three MCP hops.
+- [ ] `docs/sharp-proof/04-final-packet.png` — final Spanish/plain-language packet with readability and citations visible.
+- [ ] `docs/sharp-proof/05-marketplace.png` — published Marketplace listings for BYO Agent, External A2A Agent, and MCP server.
+- [ ] `docs/sharp-proof/06-agent-zero-mcp-ui.png` — optional bonus screenshot of Agent Zero rendering the MCP-UI iframe for `featherless-showcase-carter-elena`.
 
 ### Block 2 · Lunch (1h) — outsider tests
 
@@ -125,27 +164,27 @@ If any of these is red → record an *insurance* rough-cut video tonight even if
 - [ ] **05:00** Fix exactly **one** thing from each test. Resist the urge to fix more.
 - [ ] **05:30** README at 100%. Both video links embedded. License + citations + decisions + backlog all in place at repo root.
 - [ ] **06:00** Update Devpost with real video link. Re-read submission once. Check video plays from cold link.
-- [ ] **06:30** **Submit final.** Do not submit at 02:55 UTC tomorrow. Submit by 18:00 Europe/Rome today.
+- [ ] **06:30** **Submit final.** Do not wait until 2026-05-12 02:55 UTC. Submit by 2026-05-11 18:00 Europe/Rome.
 - [ ] **07:00** Post-submit: tweet, share to PO community, send to the named hackathon contacts.
 
 ### D6 EOD gate
 
-- ✅ Submitted, confirmed in Devpost
-- ✅ Video plays from cold link in incognito
-- ✅ Both URLs invokable in a judge's own PO workspace per `docs/po-registration.md`
-- ✅ All 3 sharp-proof screenshots committed
+- [ ] Submitted, confirmed in Devpost
+- [ ] Video plays from cold link in incognito
+- [x] Both URLs invokable in a judge's own PO workspace per `docs/po-registration.md`
+- [x] Proof artifacts captured or intentionally excluded from git with rationale
 
 ---
 
 ## 🛡️ Standing rules (apply to every minute of D5 + D6)
 
-- [ ] **Three Featherless visit-workflow tools max.** New ideas → `BACKLOG.md`.
-- [ ] **Citation-or-cut.** Any clinical claim, anywhere, must trace to `CITATIONS.md`. No grounding → cut.
-- [ ] **No token storage, ever.** Both Workers log per-request; persist nothing. Verify by reading the source before deploy.
-- [ ] **Synthetic data only.** Local HAPI + hand-crafted bundle. If HAPI is exposed for judging, it must contain only the synthetic bundle and must be temporary or access-controlled.
-- [ ] **Human-in-the-loop on send.** `CommunicationRequest.status = "draft"` with `intent = "proposal"`, never `"active"`.
-- [ ] **Build like deadline is D6 14:00.** The 4 hours after that are submission, not building.
-- [ ] **No new dependencies after D5 EOD.** Period.
+- [x] **Three Featherless visit-workflow tools max.** New ideas → `BACKLOG.md`.
+- [x] **Citation-or-cut.** Any clinical claim, anywhere, must trace to `CITATIONS.md`. No grounding → cut.
+- [x] **No token storage, ever.** Both Workers log per-request; persist nothing. Verify by reading the source before deploy.
+- [x] **Synthetic data only.** Local HAPI + hand-crafted bundle. If HAPI is exposed for judging, it must contain only the synthetic bundle and must be temporary or access-controlled.
+- [x] **Human-in-the-loop on send.** `CommunicationRequest.status = "draft"` with `intent = "proposal"`, never `"active"`.
+- [x] **Build like deadline is D6 14:00.** The 4 hours after that are submission, not building.
+- [x] **No new dependencies after D5 EOD.** Period.
 
 ---
 
@@ -162,6 +201,5 @@ Only one of these can be true. Pick the lowest-risk path that's still green at t
 
 ## 💡 Pinned reminder
 
-> Honorable mention: **$1,000**. Grand prize: **$7,500**.
 > The delta is the README, the PO workspace listing (judge can paste two URLs and it works), and the video.
 > **Spend D6 morning on those, not on code.**
